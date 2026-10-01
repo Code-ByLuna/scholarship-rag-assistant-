@@ -28,7 +28,7 @@ actual Gemini-backed API response, including after reloading the conversation.
 
 - `.env.example`
 - `README.md`
-- `assistant_response_schema.json`
+- `backend/schemas/assistant_response_schema.json`
 - `backend/api/assistant.py`
 - `backend/api/renderers.py`
 - `backend/api/urls.py`
@@ -99,7 +99,7 @@ Its historical profile model is deleted by the new migration, not imported by ru
 
 ## 3. RAG components retained
 
-- Authoritative `scholarship_dataset_ready.json`, 16 records, with original-record provenance.
+- Authoritative `data/scholarship_dataset_ready.json`, 16 records, with original-record provenance.
 - Original JSONL, combined corpus, QA report, and reference README.
 - `backend/core/rag/documents.py`: section-aware document/chunk processing.
 - `backend/core/rag/embeddings.py`: sentence-transformers/all-MiniLM-L6-v2 CPU embeddings.

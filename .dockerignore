@@ -13,3 +13,23 @@ frontend/dist
 frontend/test-results
 frontend/playwright-report
 *.sqlite3
+
+# Other private credentials, development environments and local editor artifacts.
+*.env
+*.env.*
+!*.env.example
+secrets
+credentials
+credentials.json
+service-account*.json
+service_account*.json
+*.pem
+*.key
+*.p12
+*.pfx
+venv
+env
+ENV
+.idea
+.vscode
+*.log

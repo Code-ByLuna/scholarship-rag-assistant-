@@ -1,7 +1,7 @@
 # Deployment
 
 Local (Python 3.10+, Node 24 LTS):
-1. Create a virtual environment and install requirements.txt.
+1. Create a virtual environment and install `requirements.lock` for the tested pinned dependencies. `requirements.txt` records the supported dependency ranges for development; it is the input to `scripts/lock_dependencies.py`.
 2. Copy .env.example to .env. Use DJANGO_DEBUG=true / DB_ENGINE=sqlite for local work.
 3. Create var/; migrate; seed; ingest the corpus explicitly.
 4. Run the Django development server and npm run dev from frontend/.

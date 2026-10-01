@@ -20,7 +20,7 @@ Verified on 2026-10-01 in the existing Windows/SQLite application. No applicatio
 ## Files modified
 
 - `README.md`
-- `assistant_response_schema.json`
+- `backend/schemas/assistant_response_schema.json`
 - `backend/core/agent/workflow.py`
 - `backend/core/rag/documents.py`
 - `backend/core/rag/retrieval.py`

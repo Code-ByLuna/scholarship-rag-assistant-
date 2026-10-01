@@ -11,11 +11,11 @@ No second repository was initialized, no history was rewritten, and nothing was 
 |---|---|
 | Backend and API | `backend/config`, `backend/api`, `backend/apps/navigator` |
 | RAG, agent and Gemini integration | `backend/core/rag`, `backend/core/agent`, `backend/core/llm.py` |
-| Dataset and provenance | `scholarship_dataset_ready.json`, `.jsonl`, QA report, `combined_scholarship_schemes_cleaned.json` |
+| Dataset and provenance | `data/scholarship_dataset_ready.json`, `.jsonl`, QA report, `data/combined_scholarship_schemes_cleaned.json` |
 | Frontend | `frontend/src`, `frontend/e2e`, package manifests, Vite/TypeScript configuration |
 | Tests and evaluation | `tests`, `evaluation`, saved reproducible reports |
 | Configuration templates | `.env.example`, `deploy/production.env.example` |
-| Documentation | `README.md`, `docs`; `README (1).md` is a historical attachment |
+| Documentation | `README.md`, `docs`; the supplied eligibility-engine README is now `docs/history/ELIGIBILITY_ENGINE.md` |
 | Deployment and tooling | Dockerfiles, Compose, `deploy/nginx.conf`, dependency locks, `scripts` |
 
 ## Safety and verification
@@ -43,6 +43,10 @@ No second repository was initialized, no history was rewritten, and nothing was 
   tests need no rerun.
 
 ## Existing commits and their changed files
+
+The following is a historical Git snapshot. Paths here intentionally retain their
+names at the time of those commits; current paths are listed in the inventory
+above and [the cleanup audit](REPOSITORY_CLEANUP.md).
 
 Entries are chronological and include additions, modifications and deletions
 (`A`, `M`, `D`); a deleted historical file is not a file in the current checkout.

@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 COPY requirements.lock .
 RUN pip install --no-cache-dir -r requirements.lock
 COPY backend ./backend
-COPY scholarship_dataset_ready.json combined_scholarship_schemes_cleaned.json ./
+COPY data/scholarship_dataset_ready.json data/combined_scholarship_schemes_cleaned.json ./data/
 RUN useradd --create-home navigator && mkdir -p /app/var/static && chown -R navigator:navigator /app
 USER navigator
 EXPOSE 8000

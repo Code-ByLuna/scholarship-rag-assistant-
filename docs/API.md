@@ -45,7 +45,7 @@ request bodies retain the existing structured HTTP 400 handling.
 
 The existing source Chunk is a frozen Pydantic dataclass that checks content,
 section and exact citation/chunk identity before index use. No eligibility facts
-are encoded by these validators. The generated assistant_response_schema.json and
+are encoded by these validators. The generated backend/schemas/assistant_response_schema.json and
 OpenAPI schema are updated; cross-field checks are also enforced at runtime.
 
 An optional internal `query(..., trace=...)` argument lets the offline evaluator

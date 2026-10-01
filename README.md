@@ -12,6 +12,34 @@ persisted FAISS index, then send bounded relevant evidence and history to Gemini
 The generated answer is returned directly to React after schema/evidence checks,
 with a separate grounding review for complex or uncertain answers. Retrieval/provider failures are explicit errors, never fabricated AI answers.
 
+## Repository layout
+
+```text
+backend/       Django API, agent, RAG, validation and schema snapshot
+frontend/      React interface, component tests and browser tests
+data/          Preserved scholarship corpus, JSONL projection and QA report
+evaluation/    Benchmarks, RAGAS adapters, scripts and retained reports
+docs/          Architecture, API, data, evaluation and deployment documentation
+scripts/       Dependency and repository verification tools
+tests/         Backend and evaluation regression tests
+deploy/        Reverse proxy and production configuration template
+```
+
+The runtime corpus is `data/scholarship_dataset_ready.json`; the original-record
+corpus is also retained for provenance checks. [Dataset documentation](docs/DATASET.md)
+explains all four preserved data files. The public response-schema snapshot lives
+at `backend/schemas/assistant_response_schema.json`; Python Pydantic models remain
+the runtime validators. Dockerfiles, Compose and dependency manifests stay at the
+root. Install `requirements.lock` for the tested dependency versions;
+`requirements.txt` contains the supported development ranges, and `pyproject.toml`
+configures the existing test and lint tools. No dependency versions changed.
+
+The supplied `README (1).md` contained unique instructions for the retired
+eligibility engine. Its original bytes are retained in
+[the historical documentation](docs/history/ELIGIBILITY_ENGINE.md); those examples
+refer to the old architecture. This README remains the current entry point.
+See [the repository cleanup audit](docs/REPOSITORY_CLEANUP.md) for moves and checks.
+
 ## Run this Windows workspace
 
 From `D:\social-hackthon\social-hackthon`, configure the ignored `.env`:

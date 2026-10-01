@@ -18,7 +18,9 @@ def main():
     if not shell.startswith(b"#!/bin/sh\n") or b"\r" in shell:
         raise ValueError("Docker entrypoint must be nonempty and use Unix line endings.")
     dataset = load_dataset()
-    schema = json.loads((ROOT / "assistant_response_schema.json").read_text(encoding="utf-8"))
+    schema = json.loads(
+        (ROOT / "backend/schemas/assistant_response_schema.json").read_text(encoding="utf-8")
+    )
     if schema != ScholarshipAnswer.model_json_schema():
         raise ValueError("Generated assistant response schema is out of date.")
     tracked = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).decode().split("\0")
