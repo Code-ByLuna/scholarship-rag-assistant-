@@ -137,3 +137,54 @@ def test_missing_api_key_falls_back(monkeypatch):
     result = query(QueryRequest(question="single girl child documents"), "test")
     assert any(w.code == "MISSING_API_KEY" for w in result.warnings)
     assert result.explanation_state == "DETERMINISTIC_FALLBACK"
+
+
+def test_supported_llm_output_and_provider_fallback():
+    chunks = prepare_documents()[:1]
+
+    class Broken:
+        name, model = "mock", "bad"
+
+        def generate(self, context):
+            return Generation("invalid-json", 3, 2)
+
+    class Good:
+        name, model = "mock", "good"
+
+        def generate(self, context):
+            return Generation(
+                json.dumps(
+                    {"fragments": [{"chunk_id": chunks[0].chunk_id, "quote": chunks[0].text}]}
+                ),
+                8,
+                4,
+            )
+
+    execution = AgentExecution.objects.create(request_id="test")
+    draft, warnings, latency = grounded_generation({}, chunks, execution, [Broken(), Good()])
+    assert draft.fragments[0].quote == chunks[0].text
+    assert warnings
+    assert execution.llm_calls.count() == 3
+    assert execution.llm_calls.last().status == "SUCCESS"
+
+
+def test_empty_retrieval_yields_insufficient_sources(monkeypatch):
+    monkeypatch.setattr(
+        "core.agent.tools.retrieve",
+        lambda **kwargs: {"chunks": [], "warnings": [], "timings_ms": {}},
+    )
+    answer = query(QueryRequest(question="An unsupported question"), "test")
+    assert answer.explanation_state == "INSUFFICIENT_SOURCES"
+    assert not answer.citations and not answer.evidence
+
+
+def test_tool_error_retries_and_is_reported():
+    execution = AgentExecution.objects.create(request_id="test")
+
+    def broken(payload):
+        raise OSError("simulated dependency outage")
+
+    tool = Tool("broken", SearchRequest, broken)
+    with pytest.raises(ToolFailure, match="TOOL_FAILED"):
+        invoke(tool, {}, execution)
+    assert execution.tools.count() == 2

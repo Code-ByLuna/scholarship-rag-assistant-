@@ -10,6 +10,22 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 
+def inline_schema(schema):
+    """Expand Pydantic local definitions into a portable OpenAPI schema."""
+    definitions = schema.get("$defs", {})
+
+    def expand(value):
+        if isinstance(value, list):
+            return [expand(item) for item in value]
+        if isinstance(value, dict):
+            if "$ref" in value and value["$ref"].startswith("#/$defs/"):
+                return expand(definitions[value["$ref"].split("/")[-1]])
+            return {key: expand(item) for key, item in value.items() if key != "$defs"}
+        return value
+
+    return expand(schema)
+
+
 def endpoint(method, schema=None, permissions=None, response_schema=None):
     def decorate(fn):
         @wraps(fn)
@@ -72,11 +88,13 @@ def endpoint(method, schema=None, permissions=None, response_schema=None):
 
         if permissions:
             wrapped = permission_classes(permissions)(wrapped)
-        view = api_view([method])(wrapped)
+        view = api_view([method] if isinstance(method, str) else method)(wrapped)
         return extend_schema(
-            request=schema.model_json_schema() if schema else None,
-            responses=response_schema or {"type": "object"},
-            operation_id=fn.__name__,
+            request={"application/json": inline_schema(schema.model_json_schema())}
+            if schema
+            else None,
+            responses={200: inline_schema(response_schema or {"type": "object"})},
+            operation_id=fn.__name__ if isinstance(method, str) else None,
         )(view)
 
     return decorate

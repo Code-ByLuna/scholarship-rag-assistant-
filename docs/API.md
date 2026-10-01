@@ -15,3 +15,8 @@ POST /api/admin/ingest and GET /api/agent/usage: authenticated Django staff only
 
 Public discovery is anonymous and throttled. Session access uses a randomly generated
 capability token; only its SHA-256 hash is stored. Never put tokens in URLs or logs.
+
+POST /api/rag/query and POST /api/agent/query: question, optional profile/scheme_ids/
+category/top_k/session_id. Both return a Pydantic ScholarshipAnswer and run the same
+grounded tool workflow. X-Session-Token is required when session_id is supplied.
+DELETE /api/sessions/{session_id}: token required; deletes private profile/messages.

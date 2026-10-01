@@ -60,3 +60,19 @@ def test_request_id_and_invalid_input(client):
     assert response.status_code == 400
     assert response["X-Request-ID"] == "test-request"
     assert "unknown" not in str(response.json()["error"])
+
+
+def test_invalid_session_and_delete(client):
+    assert client.get("/api/sessions/not-a-uuid").status_code == 404
+    session = client.post("/api/sessions", {}, format="json").json()
+    path = "/api/sessions/" + session["session_id"]
+    assert client.delete(path).status_code == 404
+    assert client.delete(path, HTTP_X_SESSION_TOKEN=session["session_token"]).status_code == 204
+    assert client.get(path, HTTP_X_SESSION_TOKEN=session["session_token"]).status_code == 404
+
+
+def test_health_exposes_real_index_status(client):
+    response = client.get("/api/health")
+    assert response.status_code == 200
+    assert response.json()["dataset"]["records"] == 16
+    assert isinstance(response.json()["vector_index"]["ready"], bool)

@@ -86,9 +86,12 @@ def sessions_create(request, payload):
     return Response({"session_id": str(session.id), "session_token": token}, status=201)
 
 
-@endpoint("GET")
+@endpoint(["GET", "DELETE"])
 def sessions_detail(request, payload, session_id):
     session = memory.get_session(session_id, request.headers.get("X-Session-Token", ""))
+    if request.method == "DELETE":
+        session.delete()
+        return Response(status=204)
     return Response({"session_id": str(session.id), "context": memory.context(session)})
 
 

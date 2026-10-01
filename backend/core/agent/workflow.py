@@ -182,7 +182,7 @@ def answer_node(state: State):
         selected = [(c, c.text[:1600]) for c in chunks]
         mode = "DETERMINISTIC_FALLBACK" if chunks else "INSUFFICIENT_SOURCES"
     if selected:
-        answer_text = "\n\n".join(c.scheme_name + " ? " + text for c, text in selected)
+        answer_text = "\n\n".join(c.scheme_name + " \u2014 " + text for c, text in selected)
     else:
         answer_text = (
             "The available scholarship data does not contain enough information to answer this."

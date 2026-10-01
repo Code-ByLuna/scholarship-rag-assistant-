@@ -26,6 +26,13 @@ def load_dataset() -> dict[str, Any]:
             key in scheme for key in ("name", "eligibility", "original_record", "provenance")
         ):
             raise ValueError("A source record is missing required corpus fields.")
+    original = json.loads(
+        (ROOT / "combined_scholarship_schemes_cleaned.json").read_text(encoding="utf-8")
+    )["schemes"]
+    for scheme in schemes:
+        key = scheme["provenance"]["original_record_key"]
+        if scheme["original_record"] != original.get(key):
+            raise ValueError("Original source record differs from the preserved source corpus.")
     return data
 
 

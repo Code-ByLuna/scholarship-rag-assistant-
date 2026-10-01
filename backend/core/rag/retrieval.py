@@ -108,7 +108,18 @@ def section_filter(question):
         return ["benefits", "important_notes"]
     if any(
         t in lower
-        for t in ("income", "require", "qualify", "eligible", "eligibility", "gate", "ceed", "year")
+        for t in (
+            "age",
+            "limit",
+            "income",
+            "require",
+            "qualify",
+            "eligible",
+            "eligibility",
+            "gate",
+            "ceed",
+            "year",
+        )
     ):
         return ["eligibility", "exclusions", "important_notes"]
     return None

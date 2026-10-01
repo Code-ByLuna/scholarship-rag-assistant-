@@ -101,3 +101,32 @@ def test_profile_rejects_fabricated_fields_and_wrong_types():
         StudentProfile(annual_family_income="unknown")
     with pytest.raises(ValidationError):
         StudentProfile(gender="female", invented=True)
+
+
+def test_or_missing_fields_only_include_unknown_values():
+    result = evaluate_scheme(
+        scheme("post_graduate_scholarship_scheme_for_gate"), {"valid_gate_score": False}
+    )
+    assert "valid_ceed_score" in result.missing_information
+    assert "valid_gate_score" not in result.missing_information
+
+
+def test_conditional_threshold_missing_only_prerequisite():
+    result = evaluate_scheme(scheme("national_means"), {"class7_marks": 70})
+    assert "category" in result.missing_information
+    assert "class7_marks" not in result.missing_information
+
+
+def test_explicit_regions_are_hard_constraints():
+    result = evaluate_scheme(
+        scheme("pragati_scholarship_scheme_for_girl_students_technical_degree"), {"state": "Kerala"}
+    )
+    assert any(r.field == "state" for r in result.failed_rules)
+
+
+def test_gate_integrated_exception_is_not_rejected_without_program_verification():
+    result = evaluate_scheme(
+        scheme("post_graduate_scholarship_scheme_for_gate"),
+        {"course_level": "undergraduate", "valid_gate_score": True},
+    )
+    assert result.status == "NEEDS_VERIFICATION"

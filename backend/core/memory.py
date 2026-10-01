@@ -4,6 +4,7 @@ import hashlib
 import secrets
 
 from apps.navigator.models import ConversationMessage, StudentProfile, UserSession
+from django.core.exceptions import ValidationError
 from django.db import transaction
 
 
@@ -16,7 +17,7 @@ def create_session() -> tuple[UserSession, str]:
 def get_session(session_id: str, token: str) -> UserSession:
     try:
         session = UserSession.objects.get(pk=session_id)
-    except (UserSession.DoesNotExist, ValueError):
+    except (UserSession.DoesNotExist, ValueError, ValidationError):
         raise PermissionError("Session not found or token invalid.") from None
     supplied = hashlib.sha256(token.encode()).hexdigest()
     if not secrets.compare_digest(supplied, session.token_hash):

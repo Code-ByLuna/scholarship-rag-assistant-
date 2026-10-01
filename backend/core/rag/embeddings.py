@@ -15,16 +15,16 @@ def model_name() -> str:
 
 
 @lru_cache(maxsize=2)
-def get_model(name):
+def get_model(name, allow_download=False):
     from sentence_transformers import SentenceTransformer
 
-    return SentenceTransformer(name, device="cpu")
+    return SentenceTransformer(name, device="cpu", local_files_only=not allow_download)
 
 
 def embed_documents(texts: list[str]) -> np.ndarray:
     with _lock:
         return np.asarray(
-            get_model(model_name()).encode(
+            get_model(model_name(), allow_download=True).encode(
                 texts, normalize_embeddings=True, show_progress_bar=False, batch_size=32
             ),
             dtype="float32",

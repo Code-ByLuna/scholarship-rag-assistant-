@@ -261,6 +261,7 @@
         }
       ],
       "default": null,
+      "description": "Existing family scholarship recipients, excluding this applicant.",
       "title": "Family Scholarship Holders"
     },
     "sports_achievement": {

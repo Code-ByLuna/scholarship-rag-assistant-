@@ -36,6 +36,7 @@ FIELDS = {
     "gender": "gender",
     "citizenship": "citizenship",
     "residency": "state",
+    "eligible_regions": "state",
     "study_mode": "study_mode",
     "course_level": "course_level",
     "education_level": "course_level",
@@ -89,6 +90,16 @@ def compile_rules(scheme: dict) -> list[Rule]:
         key = path.split(".")[-1]
         if "renewal" in path or key == "promotion_required_for_renewal":
             add("renewal", "not_applicable", value, path, "Renewal rule; fresh application.")
+            return
+        if key in ("institution", "institution_requirement"):
+            add("institution_approved", "equals", True, path, str(value))
+            verify(path, value, "institution_eligibility")
+            return
+        if key == "level" and ".course_requirement." in path:
+            add("course_level", "equals", value, path, str(value))
+            return
+        if key == "mode" and ".course." in path:
+            add("study_mode", "equals", value, path, str(value))
             return
         if key in INCOME:
             if isinstance(value, dict):
@@ -274,7 +285,7 @@ def compile_rules(scheme: dict) -> list[Rule]:
             add("receiving_other_scholarship", "equals", False, path, text)
             matched = True
         if "aicte-approved m.e., m.tech., or m.des." in lower:
-            add("course_level", "equals", "postgraduate", path, text)
+            add("course_level", "in", ["postgraduate", "undergraduate"], path, text)
         # Textual conditions may combine multiple facts; verification protects the residual.
         if not matched or ("must be admitted" in lower or "institution" in lower):
             verify(path, text)
@@ -320,7 +331,6 @@ def evaluate_rule(rule: Rule, profile: dict) -> RuleTrace:
             value = profile.get(field)
             if value is None:
                 state = "MISSING"
-                actual = None
                 break
             if isinstance(expected, dict):
                 applies = normalize(value) not in expected["not_in"]
@@ -386,7 +396,8 @@ def evaluate_scheme(scheme: dict, profile: StudentProfile | dict) -> Eligibility
     missing = set()
     for r in traces:
         if r.status == "MISSING":
-            missing.update(r.field.split("|") if r.operator == "any_true" else [r.field])
+            fields = r.field.split("|") if r.operator == "any_true" else [r.field]
+            missing.update(field for field in fields if values.get(field) is None)
             if r.when:
                 missing.update(f for f in r.when if values.get(f) is None)
     verification = [r.description for r in traces if r.status == "REQUIRES_VERIFICATION"]

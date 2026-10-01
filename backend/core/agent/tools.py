@@ -4,6 +4,7 @@ import os
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
+from contextvars import copy_context
 from dataclasses import dataclass
 from typing import Callable
 
@@ -73,7 +74,7 @@ def invoke(tool: Tool, arguments: dict, execution, timeout=None):
                 finally:
                     _CAPACITY.release()
 
-            future = _POOL.submit(run)
+            future = _POOL.submit(copy_context().run, run)
             try:
                 result = future.result(timeout=timeout)
             except TimeoutError:

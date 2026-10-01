@@ -18,3 +18,9 @@ twin exceptions need verification. Income conflicts cannot produce a pass or fai
 
 Additional optional profile fields are asked for only from candidate rule traces.
 Natural language never updates profile facts. Schema rejects extra fields/types.
+
+Explicit eligible-region lists are hard state membership constraints. GATE/CEED
+program checks retain the final-year integrated-degree exception; an undergraduate
+label alone cannot establish a definite failure without program verification.
+Conditional rules report only unknown prerequisites, and OR rules report only
+unknown alternatives. Existing family recipients exclude the applicant.

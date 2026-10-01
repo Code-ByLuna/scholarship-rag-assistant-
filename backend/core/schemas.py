@@ -32,7 +32,11 @@ class StudentProfile(StrictModel):
     university_rank: StrictInt | None = Field(default=None, ge=1)
     valid_gate_score: StrictBool | None = None
     valid_ceed_score: StrictBool | None = None
-    family_scholarship_holders: StrictInt | None = Field(default=None, ge=0)
+    family_scholarship_holders: StrictInt | None = Field(
+        default=None,
+        ge=0,
+        description="Existing family scholarship recipients, excluding this applicant.",
+    )
     sports_achievement: str | None = Field(default=None, max_length=500)
     sports_event_level: str | None = Field(default=None, max_length=100)
     citizenship: str | None = Field(default=None, max_length=100)
