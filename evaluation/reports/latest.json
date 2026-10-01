@@ -1,0 +1,640 @@
+{
+  "generated_at": "2026-10-01T05:41:11.682810+00:00",
+  "corpus_sha256": "805a64250c4e33f7d6e116d40cc2b054cb557fe6a69a6314d179a300929042ea",
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "vector_index": {
+    "ready": true,
+    "version": "faac7d4df3034bafae61db8e52553481",
+    "chunks": 139,
+    "reason": null
+  },
+  "environment": {
+    "database": "sqlite",
+    "llm_provider": "none",
+    "platform": "win32"
+  },
+  "counts": {
+    "profiles": 34,
+    "questions": 30
+  },
+  "scores": {
+    "eligibility_correctness": 1.0,
+    "retrieval_hit_rate": 1.0,
+    "answer_relevance": 1.0,
+    "context_relevance": 0.7689,
+    "faithfulness_exact_source_quotes": 1.0,
+    "citation_correctness": 1.0,
+    "unsupported_excerpt_rate": 0.0,
+    "agent_failure_rate": 0.0
+  },
+  "overall_score": 0.967,
+  "target_met": true,
+  "cold_start_ms": 11091.114,
+  "latency_ms": {
+    "embedding": {
+      "p50": 20.447,
+      "p95": 37.155,
+      "p99": 41.601
+    },
+    "vector_retrieval": {
+      "p50": 0.284,
+      "p95": 1.033,
+      "p99": 1.566
+    },
+    "retrieval_total": {
+      "p50": 22.358,
+      "p95": 42.852,
+      "p99": 49.536
+    },
+    "complete_request": {
+      "p50": 388.463,
+      "p95": 1042.711,
+      "p99": 1257.661
+    }
+  },
+  "llm_latency_ms": null,
+  "limitations": [
+    "Custom deterministic harness, not RAGAS or a human semantic assessment.",
+    "Eligibility fixtures include one toy evaluator contract; it is not a source scholarship.",
+    "Faithfulness tests exact quote support; they do not prove complete answers.",
+    "No live LLM latency/cost measured when LLM_PROVIDER=none.",
+    "Warm process measurements are local observations, not an SLA."
+  ],
+  "profile_results": [
+    {
+      "case": "single girl missing",
+      "expected": "NEEDS_VERIFICATION",
+      "actual": "NEEDS_VERIFICATION",
+      "passed": true
+    },
+    {
+      "case": "wrong gender",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "age above limit",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "wrong PG year",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "wrong study mode",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "single child false",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "income exactly limit",
+      "expected": "NEEDS_VERIFICATION",
+      "actual": "NEEDS_VERIFICATION",
+      "passed": true
+    },
+    {
+      "case": "missing income",
+      "expected": "NEEDS_VERIFICATION",
+      "actual": "NEEDS_VERIFICATION",
+      "passed": true
+    },
+    {
+      "case": "wrong category",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "income above limit",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "disability below threshold",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "disability at threshold",
+      "expected": "NEEDS_VERIFICATION",
+      "actual": "NEEDS_VERIFICATION",
+      "passed": true
+    },
+    {
+      "case": "wrong school class",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "pre disability income limit",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "post disability income limit",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "other scholarship exclusion",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "pragati third year",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "lateral entry unknown",
+      "expected": "NEEDS_VERIFICATION",
+      "actual": "NEEDS_VERIFICATION",
+      "passed": true
+    },
+    {
+      "case": "lateral entry false",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "pragati income fail",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "gate unknown OR",
+      "expected": "NEEDS_VERIFICATION",
+      "actual": "NEEDS_VERIFICATION",
+      "passed": true
+    },
+    {
+      "case": "gate OR fails",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "gate true institution missing",
+      "expected": "NEEDS_VERIFICATION",
+      "actual": "NEEDS_VERIFICATION",
+      "passed": true
+    },
+    {
+      "case": "GATE integrated course needs program verification",
+      "expected": "NEEDS_VERIFICATION",
+      "actual": "NEEDS_VERIFICATION",
+      "passed": true
+    },
+    {
+      "case": "Gujarat domicile wrong",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "Gujarat income above limit",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "conflicting ST income",
+      "expected": "NEEDS_VERIFICATION",
+      "actual": "NEEDS_VERIFICATION",
+      "passed": true
+    },
+    {
+      "case": "percentile exactly 80",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "percentile above 80",
+      "expected": "NEEDS_VERIFICATION",
+      "actual": "NEEDS_VERIFICATION",
+      "passed": true
+    },
+    {
+      "case": "ICAR wrong category",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "institution not approved",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "NMMS low class7 marks",
+      "expected": "NOT_ELIGIBLE",
+      "actual": "NOT_ELIGIBLE",
+      "passed": true
+    },
+    {
+      "case": "NMMS reserved marks",
+      "expected": "NEEDS_VERIFICATION",
+      "actual": "NEEDS_VERIFICATION",
+      "passed": true
+    },
+    {
+      "case": "fully resolved generic rule contract",
+      "expected": "ELIGIBLE",
+      "actual": "ELIGIBLE",
+      "passed": true
+    }
+  ],
+  "question_results": [
+    {
+      "id": "q01",
+      "question": "What documents are needed for the single girl child scholarship?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 1.0,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q02",
+      "question": "How much does the single girl child scholarship provide?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 0.5,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q03",
+      "question": "How do I apply for the single girl child scholarship?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 0.5,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q04",
+      "question": "What is the age limit for single girl child scholarship?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 0.5,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q05",
+      "question": "What scholarships are available for OBC students?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 1.0,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q06",
+      "question": "What is the income limit for PM YASASVI?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 1.0,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q07",
+      "question": "What documents are required for PM YASASVI?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 1.0,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q08",
+      "question": "How much are PM YASASVI benefits?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 1.0,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q09",
+      "question": "Which scholarships require GATE?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 0.5,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q10",
+      "question": "Does the AICTE GATE scholarship require full time study?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 0.5,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q11",
+      "question": "How do I apply for the GATE scholarship?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 1.0,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q12",
+      "question": "What documents does the GATE scholarship require?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 1.0,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q13",
+      "question": "What is the disability requirement for Saksham?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 0.5,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q14",
+      "question": "What is the income limit for Saksham?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 0.5,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q15",
+      "question": "How much does Saksham provide?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 1.0,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q16",
+      "question": "What documents are needed for Saksham?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 1.0,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q17",
+      "question": "Can a third-year student apply for Pragati technical degree?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 0.5,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q18",
+      "question": "What documents does Pragati technical diploma need?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 1.0,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q19",
+      "question": "How much does Pragati technical degree provide?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 1.0,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q20",
+      "question": "How do I apply for Pragati technical diploma?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 1.0,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q21",
+      "question": "What is the income limit for pre matric students with disabilities?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 0.5,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": [
+        "SOURCE_CONTRADICTION"
+      ]
+    },
+    {
+      "id": "q22",
+      "question": "What documents are needed for pre matric students with disabilities?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 1.0,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": [
+        "SOURCE_CONTRADICTION"
+      ]
+    },
+    {
+      "id": "q23",
+      "question": "How much does post matric students with disabilities provide?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 0.4,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": [
+        "SOURCE_CONTRADICTION",
+        "SOURCE_CONTRADICTION"
+      ]
+    },
+    {
+      "id": "q24",
+      "question": "What is the income limit for Scheduled Tribe pre matric scholarship?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 0.3333333333333333,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": [
+        "SOURCE_CONTRADICTION"
+      ]
+    },
+    {
+      "id": "q25",
+      "question": "What is the income limit for Ph D SEBC students in Gujarat?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 1.0,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q26",
+      "question": "How do I apply for Ph D SEBC scholarship?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 1.0,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q27",
+      "question": "What documents are required for ICAR?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 1.0,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q28",
+      "question": "How much does ICAR provide?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 0.5,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q29",
+      "question": "What is the income limit for national means cum merit scholarship?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 0.3333333333333333,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    },
+    {
+      "id": "q30",
+      "question": "What documents are needed for university rank holders?",
+      "retrieval_hit": true,
+      "answer_relevant": true,
+      "context_relevance": 1.0,
+      "grounding": 1.0,
+      "citation_correct": true,
+      "agent_failed": false,
+      "mode": "DETERMINISTIC_FALLBACK",
+      "warnings": []
+    }
+  ]
+}
