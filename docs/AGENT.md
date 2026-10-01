@@ -29,3 +29,16 @@ are bounded by retrieved context; sources are never fabricated.
 Tokens and cost are stored per call if provided/configured. Missing provider usage
 is null, never invented. Input characters and output tokens are configurable.
 LLM output is an evidence selector, not an eligibility authority.
+
+Gemini requests use `response_json_schema` rather than the SDK's typed
+`response_schema`. This preserves the JSON Schema `additionalProperties: false`
+constraint without serializing an unsupported `additional_properties` field.
+Local Pydantic validation still rejects extra fields and unsupported evidence.
+Permanent request/auth/model errors and quota failures do not receive an immediate
+identical retry. Output validation, transport, timeout and server failures may
+retry once before proceeding to the configured fallback.
+Warnings distinguish `LLM_REQUEST_INVALID`, `LLM_AUTH_FAILED`,
+`LLM_MODEL_UNAVAILABLE`, `LLM_RATE_LIMITED`, `LLM_TIMEOUT`, `LLM_NETWORK_ERROR`,
+`LLM_PROVIDER_UNAVAILABLE`, `LLM_PROVIDER_ERROR`, and `LLM_RESPONSE_REJECTED`.
+Failure logs include a safe error code and HTTP status, never raw provider error
+payloads, credentials, or model output.

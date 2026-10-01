@@ -64,7 +64,9 @@ class GeminiProvider(LLMProvider):
                 config=types.GenerateContentConfig(
                     system_instruction=SYSTEM_PROMPT,
                     response_mime_type="application/json",
-                    response_schema=GroundedDraft,
+                    # Use raw JSON Schema: the typed Schema serializer can send
+                    # unsupported additional_properties fields to Gemini.
+                    response_json_schema=GroundedDraft.model_json_schema(),
                     max_output_tokens=int(os.getenv("LLM_MAX_OUTPUT_TOKENS", "1800")),
                     temperature=0,
                 ),
@@ -104,6 +106,76 @@ def validate_draft(text: str, chunks) -> GroundedDraft:
     return draft
 
 
+def generation_failure(exc, *, output_received):
+    """Return actionable diagnostics without exposing provider payloads or credentials."""
+    from httpx import TimeoutException, TransportError
+
+    http_status = getattr(exc, "code", None)
+    if not isinstance(http_status, int) or not 100 <= http_status <= 599:
+        http_status = None
+    if output_received:
+        return (
+            "LLM_RESPONSE_REJECTED",
+            "The LLM output failed JSON or source-evidence validation; source excerpts used.",
+            True,
+            http_status,
+        )
+    if isinstance(exc, RuntimeError) and str(exc) == "MISSING_API_KEY":
+        return "MISSING_API_KEY", "Set GEMINI_API_KEY in .env and restart Django.", False, None
+    failures = {
+        400: (
+            "LLM_REQUEST_INVALID",
+            "The provider rejected the request configuration (HTTP 400).",
+            False,
+        ),
+        401: (
+            "LLM_AUTH_FAILED",
+            "The provider rejected authentication (HTTP 401); check the API key.",
+            False,
+        ),
+        403: (
+            "LLM_AUTH_FAILED",
+            "The provider denied access (HTTP 403); check key permissions and model access.",
+            False,
+        ),
+        404: (
+            "LLM_MODEL_UNAVAILABLE",
+            "The configured model was not found (HTTP 404); check LLM_MODEL.",
+            False,
+        ),
+        429: (
+            "LLM_RATE_LIMITED",
+            "Provider quota or rate limit reached (HTTP 429); check AI Studio usage and billing.",
+            False,
+        ),
+    }
+    if http_status in failures:
+        code, message, retry = failures[http_status]
+        return code, message + " Source excerpts used.", retry, http_status
+    if isinstance(exc, (TimeoutError, TimeoutException)) or http_status in (408, 504):
+        return "LLM_TIMEOUT", "The LLM request timed out; source excerpts used.", True, http_status
+    if isinstance(exc, TransportError):
+        return (
+            "LLM_NETWORK_ERROR",
+            "Cannot reach the LLM provider; check network connectivity. Source excerpts used.",
+            True,
+            http_status,
+        )
+    if http_status is not None and http_status >= 500:
+        return (
+            "LLM_PROVIDER_UNAVAILABLE",
+            "The LLM provider returned a server error; source excerpts used.",
+            True,
+            http_status,
+        )
+    return (
+        "LLM_PROVIDER_ERROR",
+        "The LLM provider call failed; source excerpts used.",
+        False,
+        http_status,
+    )
+
+
 def grounded_generation(context, chunks, execution, providers=None):
     """Retry malformed output once, then next provider, then extractive fallback."""
     warnings = []
@@ -126,23 +198,20 @@ def grounded_generation(context, chunks, execution, providers=None):
                 status = "SUCCESS"
                 return draft, warnings, latency + (time.perf_counter() - started) * 1000
             except Exception as exc:
+                code, message, retryable, http_status = generation_failure(
+                    exc, output_received=generated is not None
+                )
                 event(
                     "llm_failure",
                     provider=provider.name,
                     model=provider.model,
                     attempt=attempt + 1,
                     error_type=type(exc).__name__,
+                    error_code=code,
+                    http_status=http_status,
                 )
-                code = (
-                    "MISSING_API_KEY" if str(exc) == "MISSING_API_KEY" else "LLM_RESPONSE_REJECTED"
-                )
-                warnings.append(
-                    {
-                        "code": code,
-                        "message": "LLM unavailable or output unsupported; fallback applied.",
-                    }
-                )
-                if code == "MISSING_API_KEY":
+                warnings.append({"code": code, "message": message})
+                if not retryable:
                     break
             finally:
                 duration = (time.perf_counter() - started) * 1000
