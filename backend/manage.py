@@ -1,4 +1,5 @@
 """Django command entry point."""
+
 import os
 import sys
 
