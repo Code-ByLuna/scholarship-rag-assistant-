@@ -126,6 +126,7 @@ def classify_query(question: str) -> dict:
     # corpus name words for the information-need classifier, never the search query.
     from core.rag.retrieval import filters_for
 
+    normalized = question
     named = filters_for(question).get("scheme_id", [])
     if named:
         keep = {
@@ -166,9 +167,40 @@ def classify_query(question: str) -> dict:
     intent = ranked[0]
     if best[intent] < 0.28:
         intent = "general"
+    # Information-need cues route compound requests; they encode no facts.
+    cues = {
+        "benefits": r"\b(benefits?|amount|financial assistance|payment|how much)\b",
+        "documents": r"\b(documents?|papers|proofs|certificates)\b",
+        "application": r"\b(how (?:do|can|should) (?:i|we) apply|how to apply|application (?:procedures?|process|methods?|steps)|register|submit)\b",
+        "eligibility": r"\b(eligible|eligibility|criteria|conditions|income|admission|disability|qualify|can .+ apply)\b",
+        "exclusions": r"\b(excluded|exclusions|disqualify)\b",
+    }
+    requested = [key for key, pattern in cues.items() if re.search(pattern, normalized, re.I)]
+    if (
+        intent == "comparison"
+        and requested
+        and not re.search(r"\b(compare|comparison|versus|vs|differences?)\b", normalized, re.I)
+    ):
+        intent = max(requested, key=lambda key: best[key])
+    if len(requested) == 1 and intent in (
+        "benefits",
+        "documents",
+        "application",
+        "eligibility",
+        "exclusions",
+    ):
+        intent = requested[0]
     sections = list(INTENT_SECTIONS.get(intent, ()))
+    if requested and intent not in ("discovery", "clarification", "renewal", "deadline"):
+        sections = [section for key in requested for section in INTENT_SECTIONS[key]]
     # Mixed requests can retain more than one semantically close section.
-    if intent in ("benefits", "documents", "application", "eligibility", "exclusions"):
+    if not requested and intent in (
+        "benefits",
+        "documents",
+        "application",
+        "eligibility",
+        "exclusions",
+    ):
         for other in ranked[1:]:
             if other in INTENT_SECTIONS and best[other] >= best[intent] - 0.045:
                 sections.extend(INTENT_SECTIONS[other])

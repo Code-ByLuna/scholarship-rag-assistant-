@@ -18,8 +18,13 @@ The always option retains review for every answer. A separate review is a safegu
 not proof; skipping it trades some scrutiny for lower cost/latency. Provider requests
 never select or change deterministic eligibility rules because there are none.
 
-Malformed/unsupported outputs can be repaired once. A configured secondary model
-may be attempted. Permanent auth/config/model/quota errors are not repeated immediately.
+Malformed or unsupported returned output stops immediately, including across
+fallback providers. Transient 429/network/timeout/5xx errors retry only their failed
+phase, at most three attempts with exponential backoff (5/10 seconds by default).
+Server RetryInfo is respected; a delay exceeding the configured cap stops the call.
+Daily QuotaFailure is reported as LLM_QUOTA_EXHAUSTED without repeating the request.
+Generation and review share a 90-second budget under the default 30-second timeout.
+A configured secondary provider may handle provider failures, never rejected facts.
 Failures return HTTP 503 and safe operational codes; no quote dump replaces an AI answer.
 Input/output budgets apply to all calls. Each actual call has provider/model/phase,
 input/output tokens, status and latency records. Runtime logs add domain scores,

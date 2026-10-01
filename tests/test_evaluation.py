@@ -395,3 +395,82 @@ def test_judge_adapter_records_actual_usage_and_sanitizes_errors(monkeypatch, te
     assert judge.usage[0].status == status
     assert "fake-private-marker" not in judge.usage[0].model_dump_json()
     judge.close()
+
+
+def test_offline_judge_does_not_retry_daily_exhaustion(monkeypatch):
+    pytest.importorskip("ragas")
+    from google.genai import errors
+    from pydantic import BaseModel
+
+    from evaluation.ragas_adapter import GeminiJudge
+
+    class Output(BaseModel):
+        answer: str
+
+    calls = []
+
+    def generate_content(**kwargs):
+        calls.append(kwargs)
+        raise errors.APIError(
+            429,
+            {
+                "error": {
+                    "message": "SECRET",
+                    "details": [
+                        {
+                            "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                            "violations": [
+                                {"quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier"}
+                            ],
+                        }
+                    ],
+                }
+            },
+        )
+
+    client = SimpleNamespace(
+        models=SimpleNamespace(generate_content=generate_content), close=lambda: None
+    )
+    monkeypatch.setattr("evaluation.ragas_adapter.genai.Client", lambda **kwargs: client)
+    judge = GeminiJudge("test", "fake-key", delay=0)
+    with pytest.raises(RuntimeError, match="RAGAS_JUDGE_REQUEST_FAILED"):
+        judge.generate("Synthetic offline prompt", Output)
+    assert len(calls) == 1 and judge.usage[0].error_code == "LLM_QUOTA_EXHAUSTED"
+    assert judge.usage[0].input_tokens is None and judge.usage[0].status == "FAILED"
+    assert "SECRET" not in judge.usage[0].model_dump_json()
+    judge.close()
+
+
+def test_offline_judge_preserves_transient_attempt_and_backoff(monkeypatch):
+    pytest.importorskip("ragas")
+    from google.genai import errors
+    from pydantic import BaseModel
+
+    from evaluation.ragas_adapter import GeminiJudge
+
+    class Output(BaseModel):
+        answer: str
+
+    calls, sleeps = [], []
+
+    def generate_content(**kwargs):
+        calls.append(kwargs)
+        if len(calls) == 1:
+            raise errors.APIError(503, {"error": {"message": "SECRET"}})
+        return SimpleNamespace(
+            text='{ "answer": "Structured judgment" }',
+            usage_metadata=SimpleNamespace(prompt_token_count=7, candidates_token_count=3),
+        )
+
+    client = SimpleNamespace(
+        models=SimpleNamespace(generate_content=generate_content), close=lambda: None
+    )
+    monkeypatch.setattr("evaluation.ragas_adapter.genai.Client", lambda **kwargs: client)
+    monkeypatch.setattr("evaluation.ragas_adapter.time.sleep", sleeps.append)
+    judge = GeminiJudge("test", "fake-key", delay=0)
+    assert judge.generate("Synthetic prompt", Output).answer == "Structured judgment"
+    assert len(calls) == 2 and 10 in sleeps
+    assert [u.status for u in judge.usage] == ["FAILED", "SUCCESS"]
+    assert judge.usage[0].error_code == "LLM_PROVIDER_UNAVAILABLE"
+    assert judge.usage[1].input_tokens == 7
+    judge.close()

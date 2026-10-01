@@ -140,7 +140,7 @@ def test_unknown_or_unsupported_evidence_rejected(rag, support):
         )
 
 
-def test_malformed_output_retries_then_returns_error(rag):
+def test_malformed_output_stops_without_regeneration(rag):
     class Broken:
         name, model = "mock", "test"
         calls = 0
@@ -152,9 +152,9 @@ def test_malformed_output_retries_then_returns_error(rag):
     provider = Broken()
     execution = AgentExecution.objects.create(request_id="test")
     draft, warnings, _ = grounded_generation({}, rag[0], execution, [provider])
-    assert draft is None and provider.calls == 2
+    assert draft is None and provider.calls == 1
     assert all(w["code"] == "LLM_RESPONSE_REJECTED" for w in warnings)
-    assert execution.llm_calls.count() == 2
+    assert execution.llm_calls.count() == 1
 
 
 def test_correct_quote_cannot_hide_an_unsupported_paraphrase(rag):
@@ -181,7 +181,7 @@ def test_correct_quote_cannot_hide_an_unsupported_paraphrase(rag):
     execution = AgentExecution.objects.create(request_id="test")
     draft, warnings, _ = grounded_generation({}, rag[0], execution, [Misleading()])
     assert draft is None and warnings[-1]["code"] == "LLM_RESPONSE_REJECTED"
-    assert execution.llm_calls.filter(phase="verification", status="FAILED").count() == 2
+    assert execution.llm_calls.filter(phase="verification", status="FAILED").count() == 1
 
 
 def test_missing_key_is_explicit_error_without_a_fake_answer(monkeypatch, rag):
@@ -249,7 +249,7 @@ def test_session_reference_survives_off_topic_turn(rag):
     assert memory.context(session)["scheme_ids"] == [rag[0][0].scheme_id]
 
 
-def test_grounding_feedback_is_used_for_the_single_repair(rag):
+def test_factual_review_rejection_does_not_regenerate_for_a_better_answer(rag):
     chunk = rag[0][0]
     contexts = []
 
@@ -284,11 +284,9 @@ def test_grounding_feedback_is_used_for_the_single_repair(rag):
 
     execution = AgentExecution.objects.create(request_id="repair-test")
     draft, warnings, _ = grounded_generation({}, rag[0], execution, [Repair()])
-    assert draft.answer == "Pragati provides INR 50,000 per year."
-    assert contexts[2]["repair"] and contexts[2]["review_feedback"]["issues"] == [
-        "Unsupported amount"
-    ]
-    assert execution.llm_calls.count() == 4
+    assert draft is None and warnings[-1]["code"] == "LLM_RESPONSE_REJECTED"
+    assert len(contexts) == 2
+    assert execution.llm_calls.count() == 2
 
 
 def test_selected_scheme_context_does_not_override_a_new_named_topic(rag, generated):
@@ -401,7 +399,7 @@ def test_clarification_has_correct_status_without_source_claims(rag):
         validate_draft(json.dumps(dict(data, status="success")), rag[0], intent="clarification")
 
 
-def test_invalid_quote_receives_specific_feedback_before_one_repair(rag):
+def test_invalid_quote_is_rejected_without_regenerating(rag):
     chunk = rag[0][0]
     seen = []
 
@@ -425,9 +423,8 @@ def test_invalid_quote_receives_specific_feedback_before_one_repair(rag):
 
     execution = AgentExecution.objects.create(request_id="quote-repair")
     draft, warnings, _ = grounded_generation({}, [chunk], execution, [QuoteRepair()])
-    assert draft is not None and draft.supports[0].quote == chunk.text
-    assert "contiguous" in seen[1]["review_feedback"]["issues"][0]
-    assert execution.llm_calls.count() == 3
+    assert draft is None and warnings[-1]["code"] == "LLM_RESPONSE_REJECTED"
+    assert len(seen) == 1 and execution.llm_calls.count() == 1
 
 
 def test_numeric_error_is_rejected_even_with_a_valid_quote(rag):

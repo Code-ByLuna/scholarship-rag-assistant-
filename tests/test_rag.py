@@ -125,3 +125,32 @@ def test_multiple_named_schemes_are_resolved_from_corpus_metadata():
 def test_scheme_acronym_does_not_match_another_scheme_generic_prefix():
     ids = filters_for("Who is eligible for PM-YASASVI?")["scheme_id"]
     assert len(ids) == 1 and "yasasvi" in ids[0]
+
+
+def test_full_names_take_precedence_over_shared_name_anchors():
+    from core.corpus import records
+
+    for scheme in records():
+        ids = filters_for("Tell me about " + scheme["name"])["scheme_id"]
+        assert ids == [scheme["scheme_id"]]
+    schemes = records()[:2]
+    assert filters_for("Compare " + " and ".join(s["name"] for s in schemes))["scheme_id"] == [
+        s["scheme_id"] for s in schemes
+    ]
+
+
+def test_full_and_abbreviated_names_are_both_retained_in_a_comparison():
+    from core.corpus import records
+
+    full = next(s for s in records() if "indira" in s["scheme_id"])
+    ids = filters_for("Compare " + full["name"] + " and Pragati.")["scheme_id"]
+    assert full["scheme_id"] in ids
+    assert sum("pragati" in sid for sid in ids) == 2
+
+
+def test_explicit_category_filter_is_not_overridden_by_a_full_name():
+    from core.corpus import records
+
+    full = next(s for s in records() if "indira" in s["scheme_id"])
+    ids = filters_for(full["name"], category="OBC")["scheme_id"]
+    assert full["scheme_id"] not in ids and all("yasasvi" in sid for sid in ids)

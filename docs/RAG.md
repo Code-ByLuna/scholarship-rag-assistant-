@@ -15,10 +15,16 @@ local model returns an explicit error; it is never downloaded during a request.
 
 Corpus-derived names and explicit categories constrain candidates. For information
 need classification, matched name words are normalized without changing the search
-question. Section classification is semantic, not keyword-based answer generation.
+question. Section routing combines the existing semantic classifier with a small set of
+information-need cues for compound requests. These cues contain no scheme facts,
+thresholds or eligibility decisions. Full-name matches outrank shared name words;
+remaining abbreviated names and explicit category filters stay supported.
 Focused requests search relevant sections, such as benefits, documents or application.
-Broad queries diversify a bounded shortlist; comparisons/discovery include its
-criteria, benefits and available procedures. Relevant cautionary notes are preserved.
+Comparisons retrieve the sections actually requested from each named scheme.
+Named-section continuations remain in their original order. Discovery preserves
+scheme identity and checks explicit audiences against corpus target-group metadata.
+Criteria retain restrictions and notes; narrow lookups retain related notes and
+flagged contradictions. The context budget still bounds all selected evidence.
 
 Context preparation deduplicates whole chunks by scheme, section and content, so
 identical amounts from distinct schemes remain separate sources. It does not rewrite
@@ -32,8 +38,14 @@ exact quotes identify evidence separately. Schema, exact membership, generic num
 apply to every scholarship generation. LLM_GROUNDING_REVIEW=auto adds a separate
 semantic review for uncertainty/complexity; simple lookups need one call. always
 reviews every generation. Review receives cited evidence and important notes, not
-all irrelevant retrieved chunks. One bounded repair and configured provider fallback
-remain available, with real call/token accounting and explicit failures.
+all irrelevant retrieved chunks. Every supplied important note must be examined;
+unknown note IDs are rejected. Factual/schema/quote rejections stop without a new
+answer attempt. Only transient provider failures retry, within the same phase;
+daily exhaustion stops immediately. All attempted calls remain counted.
+Request-local source aliases reduce repeated identifier tokens and expand back to
+the original IDs before strict validation. They never alter quotes or answer text.
+Procedure list labels and verified counts of cited schemes are distinguished from
+factual amounts/durations; unsupported numeric facts remain rejected.
 
 Source cards always offer an internal View Full Scheme link based on the verified
 scheme ID and existing #/scholarships/{id} route. An available official link is

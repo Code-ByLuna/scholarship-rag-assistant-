@@ -16,3 +16,15 @@ def test_presentational_list_numbers_are_not_treated_as_facts():
     assert quantities("1. Register online.\n2. Upload documents.") == set()
     assert quantities("Step 3: submit") == set()
     assert quantities("first year, second year, SSC/10th") == {Decimal(1), Decimal(2), Decimal(10)}
+
+
+def test_inline_procedure_labels_and_discourse_ordinals_are_not_amounts():
+    assert quantities("Follow these steps: 1. Register. 2. Upload. 3. Submit.") == set()
+    assert quantities("First, register. Second, upload.") == set()
+    assert quantities("Apply first year or second year with 40% disability and 8 lakh income.") == {
+        Decimal(1),
+        Decimal(2),
+        Decimal(40),
+        Decimal(800000),
+    }
+    assert quantities("Pay 1.5 lakh, not 2 lakh.") == {Decimal(150000), Decimal(200000)}

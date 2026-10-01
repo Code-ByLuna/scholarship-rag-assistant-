@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 from apps.navigator.models import AgentExecution, EvaluationRun
 from core import corpus, memory
 from core.agent.workflow import query
+from core.llm import REVIEW_PROMPT, SYSTEM_PROMPT
 from core.rag.documents import prepare_documents
 from core.rag.embeddings import model_name
 from core.rag.retrieval import index_status
@@ -133,6 +134,7 @@ def collect(sample, run_id):
             retrieval_latency_ms=trace.get("timings_ms", {}).get("retrieval_total", 0),
             total_latency_ms=latency,
             llm_usage=usage,
+            llm_diagnostics=trace.get("llm_diagnostics", []),
             retrieval_calls=calls,
             checks=checks,
             metrics={
@@ -166,6 +168,7 @@ async def score_result(result, sample, metrics, judge, on_progress=None):
         if result.metrics[name].status == "ok":
             continue
         started = time.perf_counter()
+        judgment_offset = len(getattr(judge, "judgments", []))
         try:
             measured = await metrics[name].ascore(**metric_arguments(name, result))
             if not math.isfinite(float(measured.value)):
@@ -197,6 +200,7 @@ async def score_result(result, sample, metrics, judge, on_progress=None):
             ),
             flush=True,
         )
+        result.judge_diagnostics[name] = getattr(judge, "judgments", [])[judgment_offset:]
         result.evaluator_usage.extend(judge.usage[offset:])
         offset = len(judge.usage)
         if on_progress is not None:
@@ -424,6 +428,29 @@ def run(args):
         "grounding_review": os.getenv("LLM_GROUNDING_REVIEW", "auto"),
         "context_max_chars": int(os.getenv("RAG_CONTEXT_MAX_CHARS", "10000")),
         "history_max_chars": int(os.getenv("RAG_HISTORY_MAX_CHARS", "2000")),
+        "application_time_budget_seconds": float(os.getenv("LLM_TOTAL_TIMEOUT_SECONDS", "90")),
+        "application_max_attempts": int(os.getenv("LLM_MAX_ATTEMPTS", "3")),
+        "application_retry_base_seconds": float(os.getenv("LLM_RETRY_BASE_SECONDS", "5")),
+        "application_retry_max_seconds": float(os.getenv("LLM_RETRY_MAX_SECONDS", "20")),
+        "application_max_output_tokens": int(os.getenv("LLM_MAX_OUTPUT_TOKENS", "2400")),
+        "application_temperature": 0.2,
+        "pipeline_revision": "targeted-reliability-v1",
+        "pipeline_sha256": hashlib.sha256(
+            b"".join(
+                (ROOT / name).read_bytes()
+                for name in (
+                    "backend/core/llm.py",
+                    "backend/core/quantities.py",
+                    "backend/core/rag/query.py",
+                    "backend/core/rag/retrieval.py",
+                    "backend/core/agent/workflow.py",
+                    "backend/core/schemas.py",
+                )
+            )
+        ).hexdigest(),
+        "application_prompt_sha256": hashlib.sha256(
+            (SYSTEM_PROMPT + REVIEW_PROMPT).encode()
+        ).hexdigest(),
     }
     versions = {
         name: importlib.metadata.version(name)

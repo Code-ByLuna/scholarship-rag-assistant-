@@ -25,7 +25,7 @@ at the end of each case, while content-free execution/usage audit rows remain.
 
 Backend pytest uses mocked providers/embeddings where needed. It verifies the actual
 generated answer reaches the API, evidence checks, malformed outputs, grounding
-rejection/repair, input rejection, tool bounds, model errors, conversation history,
+rejection without regeneration, input rejection, tool bounds, model errors, conversation history,
 source contradictions, index integrity, and removal of profile routes. Frontend tests
 verify natural-text rendering, source names, absent profiles and clear provider errors.
 Browser tests on isolated ports mock provider responses; real provider acceptance
@@ -193,3 +193,31 @@ unchanged. Both the initial report and previous-attempt list remain inspectable.
 Pacing reduces bursts but cannot guarantee quota availability. A nonzero exit code
 means a recorded pipeline/behavior/metric error; low valid metric values alone are
 not an execution error. Use `--only ID --output var/focused.json` for isolated runs.
+
+
+## Targeted reliability and quota verification
+
+The baseline run `665afa6d748242268576bcfbbe650196` and its report remain unchanged.
+The targeted fix retains the same 27 questions, reference snapshots, four RAGAS
+metrics, local embeddings and provenance checks. Diagnostic replays keep their
+failed attempts; they are application checks, not substitute RAGAS measurements.
+
+New opt-in trace fields record safe rejection reasons, quota type and retry timing.
+No raw provider exception, key, prompt or rejected draft is logged by the API.
+Offline `judge_diagnostics` retains actual validated RAGAS structured judgments,
+including context-precision explanations. Scores still come from RAGAS itself.
+Pipeline/prompt fingerprints and retry/output budgets are recorded with each run.
+
+Use a fresh output directory after a code/configuration change; `--resume` deliberately
+rejects a saved run from a different pipeline fingerprint. Never overwrite the
+baseline. Example once quota is available:
+
+```powershell
+.\var\eval-venv\Scripts\python.exe evaluation/run_eval.py --ragas --live --delay 20 --judge-delay 4 --output evaluation/reports/quality_fix/final/ragas_results.json
+```
+
+Gemini quota is per project, not per API key; an additional key on the same project
+does not restore an exhausted daily quota. See the [official quota documentation](https://ai.google.dev/gemini-api/docs/rate-limits).
+The captured provider failure identified the 500-request daily free-tier quota.
+Daily quota failures are not treated as transient retries; no score is substituted.
+See [QUALITY_FIX.md](QUALITY_FIX.md) for measured results and remaining work.

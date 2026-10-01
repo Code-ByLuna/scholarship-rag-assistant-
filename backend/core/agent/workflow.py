@@ -12,7 +12,7 @@ from langgraph.graph import END, START, StateGraph
 
 from core import corpus, memory
 from core.agent.tools import RETRIEVAL_TOOL, ToolFailure, invoke
-from core.llm import grounded_generation
+from core.llm import DIAGNOSTICS, grounded_generation
 from core.observability import event
 from core.rag.query import REDIRECT, classify_query
 from core.rag.retrieval import filters_for
@@ -252,6 +252,8 @@ def query(
         from core.observability import redact_query
 
         event("query_text", query=redact_query(payload.question))
+    diagnostics = [] if trace is not None else None
+    diagnostic_token = DIAGNOSTICS.set(diagnostics)
     try:
         state = GRAPH.invoke(
             {
@@ -277,6 +279,7 @@ def query(
                 classification=state.get("classification", {}),
                 execution_id=execution.pk,
                 top_k=payload.top_k,
+                llm_diagnostics=diagnostics,
             )
         answer = state["answer"]
         execution_status = "SUCCESS" if answer.status != "error" else "FAILED"
@@ -291,6 +294,7 @@ def query(
             code, "The assistant could not complete this question. Please try again."
         )
     finally:
+        DIAGNOSTICS.reset(diagnostic_token)
         execution.status = execution_status
         execution.latency_ms = (time.perf_counter() - started) * 1000
         execution.save(update_fields=["status", "latency_ms"])

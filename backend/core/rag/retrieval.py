@@ -91,13 +91,27 @@ def filters_for(question, scheme_ids=None, category=None):
         return {"scheme_id": scheme_ids}
     if category:
         return {"scheme_id": [s["scheme_id"] for s in corpus.search(category=category, top_k=16)]}
+    # Full names outrank shared anchors and category words inside names.
+    normalized = " ".join(re.findall(r"[a-z0-9]+", question.lower()))
+    exact = [
+        s["scheme_id"]
+        for s in corpus.records()
+        if " " + " ".join(re.findall(r"[a-z0-9]+", s["name"].lower())) + " "
+        in " " + normalized + " "
+    ]
+    # Remove full-name spans before resolving remaining abbreviated mentions.
+    # A comparison may mix a complete name with a short name.
+    remaining = " " + normalized + " "
+    for scheme in corpus.records(exact):
+        name = " ".join(re.findall(r"[a-z0-9]+", scheme["name"].lower()))
+        remaining = remaining.replace(" " + name + " ", " ")
     # Explicit category tokens are a corpus filter, never inferred profile facts.
     categories = [
         code
         for code in ("OBC", "EBC", "DNT", "SC", "ST", "SEBC")
         if re.search(r"\b" + code + r"\b", question, re.I)
     ]
-    if categories:
+    if categories and not exact:
         return {
             "scheme_id": list(
                 dict.fromkeys(
@@ -107,7 +121,7 @@ def filters_for(question, scheme_ids=None, category=None):
                 )
             )
         }
-    query_terms = set(re.findall(r"[a-z]+", question.lower())) - COMMON
+    query_terms = set(re.findall(r"[a-z]+", remaining)) - COMMON
     scored = [
         (len(query_terms & (set(re.findall(r"[a-z]+", s["name"].lower())) - COMMON)), s)
         for s in corpus.records()
@@ -152,7 +166,9 @@ def filters_for(question, scheme_ids=None, category=None):
                 if qualifiers & set(re.findall(r"[a-z]+", s["name"].lower()))
             ]
             named = qualified or named
-        return {"scheme_id": named}
+        return {"scheme_id": list(dict.fromkeys([*exact, *named]))}
+    if exact:
+        return {"scheme_id": exact}
     best = max(score for score, _ in scored)
     if best >= 2 or any(
         t in query_terms for t in ("gate", "ceed", "yasasvi", "pragati", "saksham", "icar")
@@ -236,44 +252,88 @@ def retrieve(
             hits = [(chunk, score) for chunk, score in hits if score >= floor]
         scores.update((c.chunk_id, score) for c, score in hits)
         chunks = select_diverse(hits, effective_k, scheme_count == 1)
+        # Keep requested named-section continuations rather than truncate by k.
+        if scheme_count and sections:
+            requested_hits = store.search(vector, 64, search_filters)
+            scores.update((c.chunk_id, score) for c, score in requested_hits)
+            chunks = [c for c, score in requested_hits if score >= 0.20]
         if intent == "discovery":
+            # Explicit audience words must occur in corpus audience metadata.
+            audience = (
+                set(re.findall(r"[a-z]+", question.lower()))
+                - COMMON
+                - {"knowledge", "base", "support", "available", "there", "any", "get"}
+            )
+            matching = {
+                s["scheme_id"]
+                for s in corpus.records()
+                if audience & set(re.findall(r"[a-z]+", str(s.get("target_groups", [])).lower()))
+            }
+            if matching:
+                chunks = [c for c in chunks if c.scheme_id in matching]
             shortlist = list(dict.fromkeys(c.scheme_id for c in chunks))[:4]
             chunks = [c for c in chunks if c.scheme_id in shortlist]
         ids = list(dict.fromkeys(c.scheme_id for c in chunks))
         # Comparisons need benefits and criteria for EACH named candidate, not
         # only whichever section has the strongest name similarity.
         required_sections = (
-            ("benefits", "eligibility", "application")
-            if intent in ("comparison", "discovery")
-            else ("application",)
+            tuple(sections)
+            if intent == "comparison" and sections
+            else (
+                ("benefits", "eligibility", "application")
+                if intent == "discovery"
+                else ("application",)
+            )
         )
         if ids and intent in ("discovery", "comparison", "general"):
             for section in required_sections:
                 additions = store.search(vector, 32, {"scheme_id": ids, "section": [section]})
-                present = {c.scheme_id for c in chunks if c.section == section}
+                present = {c.chunk_id for c in chunks}
                 scores.update((c.chunk_id, score) for c, score in additions)
                 for chunk, _ in additions:
-                    if chunk.scheme_id not in present:
+                    if chunk.chunk_id not in present:
                         chunks.append(chunk)
-                        present.add(chunk.scheme_id)
+                        present.add(chunk.chunk_id)
         if ids:
             notes = store.search(vector, 32, {"scheme_id": ids, "section": ["important_notes"]})
             scores.update((c.chunk_id, score) for c, score in notes)
             for chunk, _ in notes:
                 # Narrow fact requests retain notes about that same semantic need;
                 # broad/criteria/procedure requests retain all candidate scheme notes.
+                note_need = classify_query(chunk.text)
+                conflicting = bool(
+                    re.search(
+                        r"\b(conflict|contradict|inconsisten|discrepanc|different limits)",
+                        chunk.text,
+                        re.I,
+                    )
+                )
                 if (
-                    not focused
-                    or intent == "application"
-                    or classify_query(chunk.text)["intent"] in (intent, "general")
+                    conflicting
+                    or intent in ("eligibility", "exclusions", "renewal", "general")
+                    or note_need["intent"] == "general"
+                    or bool(set(note_need["sections"]) & set(sections))
                 ):
                     chunks.append(chunk)
         vector_ms = (time.perf_counter() - t) * 1000
         before = sum(len(c.text) for c in chunks)
         count = len(chunks)
         chunks = compact_chunks(chunks, int(os.getenv("RAG_CONTEXT_MAX_CHARS", "10000")))
+        groups = list(dict.fromkeys((c.scheme_id, c.section) for c in chunks))
+        # Explicit information needs rank ahead of ancillary audience/restriction
+        # sections. Within a section preserve its original continuation order.
+        groups.sort(
+            key=lambda group: sections.index(group[1]) if group[1] in sections else len(sections)
+        )
+        chunks.sort(
+            key=lambda c: (
+                groups.index((c.scheme_id, c.section)),
+                int(c.chunk_id.rsplit(":", 1)[-1]),
+            )
+        )
         metrics = {
             "intent": intent,
+            "requested_sections": sections,
             "candidate_count": len(hits),
             "effective_top_k": effective_k,
             "before_compression_chunks": count,

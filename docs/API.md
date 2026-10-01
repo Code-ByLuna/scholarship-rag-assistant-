@@ -51,3 +51,9 @@ OpenAPI schema are updated; cross-field checks are also enforced at runtime.
 An optional internal `query(..., trace=...)` argument lets the offline evaluator
 capture actual retrieval output and timings. It changes neither public API fields
 nor source-link routing. RAGAS is never imported or invoked by the API.
+
+
+`LLM_QUOTA_EXHAUSTED` distinguishes an exhausted daily provider quota from a
+transient `LLM_RATE_LIMITED` response. Both retain the existing HTTP 503 error
+contract. Returned invalid factual output is not regenerated; transient requests
+retry within bounded phase/time limits, with all attempted calls audited.

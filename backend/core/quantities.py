@@ -56,6 +56,19 @@ def quantities(text):
     text = re.sub(r"https?://\S+", "", text.lower())
     text = re.sub(r"(?m)^\s*\d+[.)]\s+", "", text)
     text = re.sub(r"\bstep\s+\d+\b", "step", text)
+    text = re.sub(r"(?:^|(?<=[.!?:]))\s*(?:first|second|third|fourth|fifth),\s+", " ", text)
+    # Require sequential inline labels, retaining decimals and factual ordinals.
+    labels = list(re.finditer(r"(?<![\w\d])([1-9]\d*)[.)]\s+(?=[a-z])", text))
+    run = []
+    for label in labels:
+        n = int(label.group(1))
+        if n == 1:
+            run = [label]
+        elif run and n == int(run[-1].group(1)) + 1:
+            run.append(label)
+    if len(run) >= 2:
+        for label in reversed(run):
+            text = text[: label.start()] + text[label.end() :]
 
     def tens(match):
         terms = re.split(r"[ -]", match.group())

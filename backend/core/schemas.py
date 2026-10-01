@@ -109,8 +109,12 @@ class QueryRequest(SearchRequest):
 
 
 class Quote(StrictModel):
-    chunk_id: str
-    quote: str = Field(min_length=1, max_length=3000)
+    chunk_id: str = Field(min_length=1, max_length=500)
+    quote: str = Field(
+        min_length=1,
+        max_length=3000,
+        description="One exact contiguous source span; do not join separated fields.",
+    )
 
 
 class GroundedDraft(StrictModel):
@@ -125,6 +129,10 @@ class ClarificationDraft(GroundedDraft):
 
 
 class GroundingReview(StrictModel):
-    notes_examined: list[str] = Field(default_factory=list, max_length=32)
+    notes_examined: list[str] = Field(
+        default_factory=list,
+        max_length=32,
+        description="IDs of ALL important_notes examined, including irrelevant notes. Do not list other section IDs.",
+    )
     supported: StrictBool
     issues: list[str] = Field(max_length=16)

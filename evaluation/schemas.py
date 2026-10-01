@@ -79,6 +79,7 @@ class ProviderUsage(StrictModel):
     model: str
     phase: str
     status: str
+    error_code: str | None = None
     input_tokens: int | None = Field(default=None, ge=0)
     output_tokens: int | None = Field(default=None, ge=0)
     latency_ms: float = Field(ge=0, allow_inf_nan=False)
@@ -115,7 +116,9 @@ class EvaluationResult(StrictModel):
     retrieval_metrics: dict = Field(default_factory=dict)
     retrieval_latency_ms: float = Field(ge=0, allow_inf_nan=False)
     total_latency_ms: float = Field(ge=0, allow_inf_nan=False)
+    llm_diagnostics: list[dict] = Field(default_factory=list)
     llm_usage: list[ProviderUsage] = Field(default_factory=list)
+    judge_diagnostics: dict[str, list[dict]] = Field(default_factory=dict)
     evaluator_usage: list[ProviderUsage] = Field(default_factory=list)
     retrieval_calls: int = Field(ge=0)
     checks: dict[str, bool]

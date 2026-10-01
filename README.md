@@ -182,3 +182,9 @@ Pydantic validates requests, response/status consistency, source URLs/identities
 retrieved chunks, benchmark references and serialized evaluation results. It
 encodes no scholarship-specific eligibility rules. See
 [the evaluation guide](docs/EVALUATION.md) for versions, methodology and limits.
+
+
+The targeted reliability verification and the separately preserved quota-exhausted
+full run are documented in [docs/QUALITY_FIX.md](docs/QUALITY_FIX.md). The baseline
+RAGAS report remains unchanged; a complete comparable rerun requires available
+Gemini quota. Daily quota exhaustion is reported immediately and is not retried.

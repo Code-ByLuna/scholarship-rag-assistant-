@@ -4,6 +4,7 @@ import asyncio
 import threading
 import time
 
+from core.llm import generation_failure, quota_diagnostics
 from core.rag.embeddings import embed_query
 from google import genai
 from google.genai import types
@@ -36,6 +37,7 @@ class GeminiJudge(InstructorBaseRagasLLM):
             api_key=api_key, http_options=types.HttpOptions(timeout=timeout * 1000)
         )
         self.usage = []
+        self.judgments = []
         self._lock = threading.Lock()
         self._last_start = 0.0
 
@@ -47,6 +49,9 @@ class GeminiJudge(InstructorBaseRagasLLM):
                 started = time.perf_counter()
                 usage = None
                 status = "FAILED"
+                output_received = False
+                error_code = None
+                backoff = 0
                 try:
                     response = self.client.models.generate_content(
                         model=self.model,
@@ -58,19 +63,26 @@ class GeminiJudge(InstructorBaseRagasLLM):
                             temperature=0,
                         ),
                     )
+                    output_received = True
                     usage = response.usage_metadata
                     result = response_model.model_validate_json(response.text or "")
                     status = "SUCCESS"
+                    self.judgments.append(
+                        {
+                            "schema": response_model.__name__,
+                            "output": result.model_dump(mode="json"),
+                        }
+                    )
                     return result
                 except Exception as exc:
                     # Never retain raw provider exceptions, prompts, headers or credentials.
-                    retryable = getattr(exc, "code", None) in (
-                        429,
-                        500,
-                        502,
-                        503,
-                        504,
-                    ) or isinstance(exc, TimeoutError)
+                    error_code, _, retryable, _ = generation_failure(
+                        exc, output_received=output_received
+                    )
+                    retry_after = quota_diagnostics(exc)["retry_after_seconds"] or 0
+                    if retry_after > 20:
+                        retryable = False
+                    backoff = max(10 * 2**attempt, retry_after)
                     if not retryable or attempt:
                         raise RuntimeError("RAGAS_JUDGE_REQUEST_FAILED") from None
                 finally:
@@ -79,12 +91,13 @@ class GeminiJudge(InstructorBaseRagasLLM):
                             model=self.model,
                             phase="ragas_judge",
                             status=status,
+                            error_code=error_code,
                             input_tokens=getattr(usage, "prompt_token_count", None),
                             output_tokens=getattr(usage, "candidates_token_count", None),
                             latency_ms=(time.perf_counter() - started) * 1000,
                         )
                     )
-            time.sleep(10)
+            time.sleep(backoff)
         raise RuntimeError("RAGAS_JUDGE_REQUEST_FAILED")
 
     async def agenerate(self, prompt, response_model):
