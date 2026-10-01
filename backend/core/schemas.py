@@ -1,22 +1,44 @@
 """Public RAG requests, generated answers, and traceable source evidence."""
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    StrictBool,
+    StringConstraints,
+    TypeAdapter,
+    field_validator,
+    model_validator,
+)
 
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
 
+Identifier = Annotated[str, StringConstraints(min_length=1, max_length=200)]
+
+
 class Citation(StrictModel):
-    scheme_id: str
-    scheme_name: str
+    scheme_id: Identifier
+    scheme_name: str = Field(min_length=1, max_length=500)
     source_name: str | None = None
-    source_url: str | None = None
-    retrieved_from: str
-    original_record_key: str | None = None
-    excerpt: str | None = None
+    source_url: str | None = Field(default=None, max_length=2048)
+    retrieved_from: str = Field(min_length=1, max_length=500)
+    original_record_key: str | None = Field(default=None, min_length=1, max_length=200)
+    excerpt: str | None = Field(default=None, min_length=1, max_length=3000)
+
+    @field_validator("source_url")
+    @classmethod
+    def safe_source_url(cls, value):
+        if value is not None:
+            url = TypeAdapter(HttpUrl).validate_python(value)
+            if url.username or url.password:
+                raise ValueError("Source URLs must not contain credentials.")
+        return value
 
 
 class ErrorItem(StrictModel):
@@ -25,19 +47,38 @@ class ErrorItem(StrictModel):
 
 
 class ScholarshipAnswer(StrictModel):
-    answer: str
+    answer: str = Field(min_length=1, max_length=8000)
     sources: list[Citation] = Field(max_length=16)
     status: Literal["success", "out_of_scope", "insufficient_evidence", "error"]
     error: ErrorItem | None = None
     request_id: str | None = None
     session_id: str | None = None
 
+    @model_validator(mode="after")
+    def consistent_status(self):
+        if (self.status == "error") != (self.error is not None):
+            raise ValueError("Only error responses must carry an error object.")
+        if self.status in ("out_of_scope", "error") and self.sources:
+            raise ValueError("Off-domain and failed answers cannot cite schemes.")
+        if self.status == "success" and not self.sources:
+            raise ValueError("Successful scholarship answers require sources.")
+        if any(not source.excerpt for source in self.sources):
+            raise ValueError("Answer citations require supporting excerpts.")
+        return self
+
 
 class SearchRequest(StrictModel):
     question: str = Field(default="", max_length=2000)
-    scheme_ids: list[str] | None = Field(default=None, max_length=16)
-    category: str | None = Field(default=None, max_length=100)
-    top_k: int = Field(default=8, ge=1, le=16)
+    scheme_ids: list[Identifier] | None = Field(default=None, max_length=16)
+    category: str | None = Field(default=None, min_length=1, max_length=100)
+    top_k: int = Field(default=8, ge=1, le=16, strict=True)
+
+    @field_validator("scheme_ids")
+    @classmethod
+    def distinct_identifiers(cls, value):
+        if value is not None and len(value) != len(set(value)):
+            raise ValueError("Scholarship identifiers must be unique.")
+        return value
 
 
 class RetrievalRequest(SearchRequest):

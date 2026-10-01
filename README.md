@@ -143,3 +143,42 @@ Metrics record domain scores, query fingerprint, chunk/character counts, final
 context size, actual provider input/output tokens and latency. Optional
 `RAG_LOG_QUERY_TEXT=true` enables query text with common credentials redacted; keep
 it false for normal operation. The configured provider/model/key are unchanged.
+
+## Offline RAGAS evaluation
+
+The existing evaluation command now has an explicit `--ragas --live` mode. It
+calls the same production `query()` workflow used by the API, captures actual
+FAISS chunks/scores and Gemini answers, then runs RAGAS Faithfulness, Answer
+Relevancy, Context Precision and Context Recall. RAGAS never runs during normal
+user requests. The existing domain gate skips retrieval/provider calls for clear
+unrelated questions; those and clarification are evaluated separately.
+
+Install the optional locked dependencies in an isolated environment; normal
+application dependencies and Docker startup remain unchanged:
+
+```powershell
+python -m venv --system-site-packages var/eval-venv
+.\var\eval-venv\Scripts\python.exe -m pip install -r evaluation/requirements.lock
+.\var\eval-venv\Scripts\python.exe evaluation/run_eval.py --ragas --live --delay 20 --judge-delay 4
+```
+
+Keep the working private Gemini key/model in the ignored `.env`. This command
+makes real application and judge requests and consumes provider tokens. The
+27-question benchmark in `evaluation/ragas_cases.json` covers all 16 schemes;
+references and context IDs are verified against the unchanged source corpus.
+Results are saved to `evaluation/reports/ragas_results.json` and the automatically
+generated [RAG Evaluation Report](evaluation/reports/RAG_EVALUATION_REPORT.md).
+
+Use `--resume` to reuse validated captures/completed metrics after interruption.
+Pacing can increase; changes are recorded. Add `--retry-failed` to retry transient
+rate/network/timeout failures once, preserving prior attempts and all costs.
+Rejected factual output is retained as a failure. `--only ID --output var/pilot.json`
+selects a focused real run. Scores use successful measurements only; failures,
+missing usage and skipped metrics are explicit. Read score denominators and the
+failure table before interpreting an average. These measurements are not a proof
+of correctness or official eligibility decisions.
+
+Pydantic validates requests, response/status consistency, source URLs/identities,
+retrieved chunks, benchmark references and serialized evaluation results. It
+encodes no scholarship-specific eligibility rules. See
+[the evaluation guide](docs/EVALUATION.md) for versions, methodology and limits.

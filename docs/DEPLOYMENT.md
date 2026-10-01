@@ -56,3 +56,12 @@ Use always review when stronger semantic scrutiny is preferred over single-call
 simple lookups. No vector schema/database migration is needed for domain checks or
 internal source links. Ingestion remains the documented command for a missing/stale
 index; all 16 application sections are retained. See DEMO_READINESS.md.
+
+## Optional offline evaluation
+
+RAGAS dependencies are isolated in `evaluation/requirements.lock`; they are not
+added to the normal image or startup command. `docker compose up` retains its
+existing application behavior. Run the explicit host evaluation command documented
+in [EVALUATION.md](EVALUATION.md) with the existing private Gemini configuration,
+normal database and persisted FAISS index. No Docker/MySQL runtime acceptance is
+claimed by the Windows/SQLite evaluation.

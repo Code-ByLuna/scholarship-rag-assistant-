@@ -206,6 +206,7 @@ def retrieve(
     embed_ms = vector_ms = 0.0
     warnings, chunks = [], []
     metrics = {}
+    scores = {}
     state = index_status()
     try:
         if not state["ready"]:
@@ -233,6 +234,7 @@ def retrieve(
         if intent == "discovery" and hits:
             floor = max(0.20, hits[0][1] - 0.15)
             hits = [(chunk, score) for chunk, score in hits if score >= floor]
+        scores.update((c.chunk_id, score) for c, score in hits)
         chunks = select_diverse(hits, effective_k, scheme_count == 1)
         if intent == "discovery":
             shortlist = list(dict.fromkeys(c.scheme_id for c in chunks))[:4]
@@ -249,12 +251,14 @@ def retrieve(
             for section in required_sections:
                 additions = store.search(vector, 32, {"scheme_id": ids, "section": [section]})
                 present = {c.scheme_id for c in chunks if c.section == section}
+                scores.update((c.chunk_id, score) for c, score in additions)
                 for chunk, _ in additions:
                     if chunk.scheme_id not in present:
                         chunks.append(chunk)
                         present.add(chunk.scheme_id)
         if ids:
             notes = store.search(vector, 32, {"scheme_id": ids, "section": ["important_notes"]})
+            scores.update((c.chunk_id, score) for c, score in notes)
             for chunk, _ in notes:
                 # Narrow fact requests retain notes about that same semantic need;
                 # broad/criteria/procedure requests retain all candidate scheme notes.
@@ -291,6 +295,7 @@ def retrieve(
     return {
         "chunks": chunks,
         "warnings": warnings,
+        "scores": {c.chunk_id: scores[c.chunk_id] for c in chunks if c.chunk_id in scores},
         "metrics": metrics,
         "timings_ms": {
             "embedding": embed_ms,

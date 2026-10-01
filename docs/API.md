@@ -33,3 +33,21 @@ No deterministic eligibility statuses, rules, traces or profiles are returned.
 Health checks configuration, not a live model call. Provider outages can occur even
 when health reports configured. API keys are never returned. Browsing remains useful
 without a provider, but assistant generation requires one.
+
+## Pydantic validation and evaluation tracing
+
+The existing models now require nonempty/bounded scheme/source identifiers,
+distinct scheme filters, integer `top_k` (not strings or booleans), nonempty answers,
+HTTP(S) source URLs without embedded credentials and consistent answer statuses.
+Successful responses require citations with excerpts; failed/off-domain responses
+have no scheme citations, and only failed responses carry an error object. Invalid
+request bodies retain the existing structured HTTP 400 handling.
+
+The existing source Chunk is a frozen Pydantic dataclass that checks content,
+section and exact citation/chunk identity before index use. No eligibility facts
+are encoded by these validators. The generated assistant_response_schema.json and
+OpenAPI schema are updated; cross-field checks are also enforced at runtime.
+
+An optional internal `query(..., trace=...)` argument lets the offline evaluator
+capture actual retrieval output and timings. It changes neither public API fields
+nor source-link routing. RAGAS is never imported or invoked by the API.

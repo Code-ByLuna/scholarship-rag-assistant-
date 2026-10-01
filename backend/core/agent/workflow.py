@@ -34,6 +34,8 @@ class State(TypedDict, total=False):
     answer: ScholarshipAnswer
     iterations: int
     classification: dict
+    retrieval_metrics: dict
+    scores: dict
 
 
 def step(state):
@@ -115,6 +117,8 @@ def retrieve_node(state: State):
             "chunks": retrieved["chunks"],
             "warnings": retrieved["warnings"],
             "timings": retrieved["timings_ms"],
+            "retrieval_metrics": retrieved.get("metrics", {}),
+            "scores": retrieved.get("scores", {}),
         }
     except ToolFailure as exc:
         return {
@@ -233,7 +237,9 @@ def build_graph():
 GRAPH = build_graph()
 
 
-def query(payload, request_id: str, session=None) -> ScholarshipAnswer:
+def query(
+    payload, request_id: str, session=None, *, trace: dict | None = None
+) -> ScholarshipAnswer:
     started = time.perf_counter()
     execution = AgentExecution.objects.create(session=session, request_id=request_id)
     execution_status = "FAILED"
@@ -262,6 +268,16 @@ def query(payload, request_id: str, session=None) -> ScholarshipAnswer:
             },
             config={"recursion_limit": max(2, int(os.getenv("AGENT_MAX_ITERATIONS", "6")) + 1)},
         )
+        if trace is not None:
+            trace.update(
+                chunks=state.get("chunks", []),
+                scores=state.get("scores", {}),
+                timings_ms=state.get("timings", {}),
+                retrieval_metrics=state.get("retrieval_metrics", {}),
+                classification=state.get("classification", {}),
+                execution_id=execution.pk,
+                top_k=payload.top_k,
+            )
         answer = state["answer"]
         execution_status = "SUCCESS" if answer.status != "error" else "FAILED"
     except Exception as exc:

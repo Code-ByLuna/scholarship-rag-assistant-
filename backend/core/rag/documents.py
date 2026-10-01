@@ -2,9 +2,14 @@
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
+from typing import Annotated
+
+from pydantic import ConfigDict, Field
+from pydantic.dataclasses import dataclass
 
 from core.corpus import citation, records
+from core.schemas import Citation
 
 SECTIONS = (
     "objective",
@@ -20,14 +25,26 @@ SECTIONS = (
 )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, config=ConfigDict(extra="forbid", str_strip_whitespace=True))
 class Chunk:
-    chunk_id: str
-    scheme_id: str
-    scheme_name: str
-    section: str
-    text: str
+    chunk_id: Annotated[str, Field(min_length=1, max_length=500)]
+    scheme_id: Annotated[str, Field(min_length=1, max_length=200)]
+    scheme_name: Annotated[str, Field(min_length=1, max_length=500)]
+    section: Annotated[str, Field(min_length=1, max_length=50)]
+    text: Annotated[str, Field(min_length=1, max_length=20000)]
     citation: dict
+
+    def __post_init__(self):
+        cited = Citation.model_validate(self.citation)
+        if (cited.scheme_id, cited.scheme_name, cited.retrieved_from) != (
+            self.scheme_id,
+            self.scheme_name,
+            self.chunk_id,
+        ):
+            raise ValueError("Chunk and citation identities must agree.")
+        if self.section not in SECTIONS:
+            raise ValueError("Unknown scholarship section.")
+        object.__setattr__(self, "citation", cited.model_dump())
 
     def to_dict(self):
         return asdict(self)

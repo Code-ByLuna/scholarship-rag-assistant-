@@ -12,6 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
+sys.path.insert(0, str(ROOT))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 import django
 
@@ -44,9 +45,7 @@ def main():
         help="Call configured Gemini for 16 RAG acceptance cases and conversation setup turns.",
     )
     parser.add_argument("--output", default=None)
-    parser.add_argument(
-        "--cases", default="evaluation/rag_cases.json", help="Live acceptance fixture JSON path."
-    )
+    parser.add_argument("--cases", default=None, help="Acceptance or RAGAS fixture JSON path.")
     parser.add_argument(
         "--only", action="append", help="Run one named acceptance case; may be repeated."
     )
@@ -56,7 +55,44 @@ def main():
         default=20,
         help="Seconds between live cases/setup turns; avoids provider rate limits.",
     )
+    parser.add_argument(
+        "--ragas",
+        action="store_true",
+        help="Run offline RAGAS on the actual production workflow; requires --live and optional evaluation dependencies.",
+    )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume validated saved real RAGAS captures and incomplete metrics.",
+    )
+    parser.add_argument(
+        "--retry-failed",
+        action="store_true",
+        help="With --resume, retry only transient application rate/network/timeout failures once; preserve prior attempts and all usage.",
+    )
+    parser.add_argument(
+        "--judge-model",
+        help="Optional separate Gemini judge model; defaults to the configured application model.",
+    )
+    parser.add_argument(
+        "--judge-delay",
+        type=float,
+        default=4,
+        help="Minimum seconds between actual judge requests.",
+    )
     args = parser.parse_args()
+    if args.delay < 0 or args.judge_delay < 0:
+        parser.error("Delays cannot be negative.")
+    if args.retry_failed and not (args.ragas and args.resume):
+        parser.error("--retry-failed requires --ragas --resume.")
+    if args.ragas:
+        if not args.live:
+            parser.error(
+                "--ragas requires --live: application and judge requests incur provider usage."
+            )
+        from evaluation.ragas_eval import run
+
+        return run(args)
     started = time.perf_counter()
     documents = {c.chunk_id: c for c in prepare_documents()}
     report = {
@@ -94,7 +130,9 @@ def main():
             "Retrieval-only measurements; no generation, answer accuracy or eligibility-decision score is claimed."
         )
     else:
-        cases = json.loads((ROOT / args.cases).read_text(encoding="utf-8"))
+        cases = json.loads(
+            (ROOT / (args.cases or "evaluation/rag_cases.json")).read_text(encoding="utf-8")
+        )
         if args.only:
             cases = [case for case in cases if case["id"] in args.only]
             if len(cases) != len(set(args.only)):

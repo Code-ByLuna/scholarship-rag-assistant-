@@ -95,9 +95,19 @@ def test_context_compression_keeps_conflicts_and_distinct_scheme_facts():
     from core.rag.documents import Chunk
     from core.rag.retrieval import compact_chunks
 
-    first = Chunk("a:benefits", "a", "Scheme A", "benefits", "An annual award", {})
-    second = Chunk("b:benefits", "b", "Scheme B", "benefits", "An annual award", {})
-    note = Chunk("a:notes", "a", "Scheme A", "important_notes", "Conflicting criteria", {})
+    def chunk(cid, sid, name, section, text):
+        return Chunk(
+            cid,
+            sid,
+            name,
+            section,
+            text,
+            {"scheme_id": sid, "scheme_name": name, "retrieved_from": cid},
+        )
+
+    first = chunk("a:benefits", "a", "Scheme A", "benefits", "An annual award")
+    second = chunk("b:benefits", "b", "Scheme B", "benefits", "An annual award")
+    note = chunk("a:notes", "a", "Scheme A", "important_notes", "Conflicting criteria")
     result = compact_chunks([first, first, second, note], 100)
     assert result == [first, second, note]
     narrow = compact_chunks([first, second, note], len(note.text) + len(first.text))
