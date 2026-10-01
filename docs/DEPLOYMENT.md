@@ -49,3 +49,10 @@ answer includes a second grounding-review call. Plan token budgets and provider
 quotas accordingly. Index/provider failures return HTTP 503 instead of fake answers.
 Migration 0002 removes the legacy personal-profile table and old profile/rule traces.
 Existing corpus/vector volumes are retained; source eligibility text remains indexed.
+
+Current demo efficiency defaults are RAG_CONTEXT_MAX_CHARS=10000,
+RAG_HISTORY_MAX_CHARS=2000, LLM_GROUNDING_REVIEW=auto and RAG_LOG_QUERY_TEXT=false.
+Use always review when stronger semantic scrutiny is preferred over single-call
+simple lookups. No vector schema/database migration is needed for domain checks or
+internal source links. Ingestion remains the documented command for a missing/stale
+index; all 16 application sections are retained. See DEMO_READINESS.md.

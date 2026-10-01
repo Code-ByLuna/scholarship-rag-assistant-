@@ -69,7 +69,7 @@ def test_semantic_search_keeps_conflicting_notes(monkeypatch):
     monkeypatch.setattr(
         "core.rag.retrieval.embed_query", lambda question: np.zeros((1, 2), dtype="float32")
     )
-    result = retrieve("income limit", scheme_ids=[sid])
+    result = retrieve("income limit", scheme_ids=[sid], intent="eligibility", sections=[])
     assert result["chunks"] == [eligible, note]
     assert len(searches) == 2 and "2.00 lakh" in note.text and "2.50 lakh" in note.text
 
@@ -89,3 +89,29 @@ def test_sc_st_filter_includes_both_categories():
     ids = filters_for("scholarships for SC/ST students")["scheme_id"]
     assert any("scheduled_tribe_students" in sid for sid in ids)
     assert any("scheduled_caste" in sid for sid in ids)
+
+
+def test_context_compression_keeps_conflicts_and_distinct_scheme_facts():
+    from core.rag.documents import Chunk
+    from core.rag.retrieval import compact_chunks
+
+    first = Chunk("a:benefits", "a", "Scheme A", "benefits", "An annual award", {})
+    second = Chunk("b:benefits", "b", "Scheme B", "benefits", "An annual award", {})
+    note = Chunk("a:notes", "a", "Scheme A", "important_notes", "Conflicting criteria", {})
+    result = compact_chunks([first, first, second, note], 100)
+    assert result == [first, second, note]
+    narrow = compact_chunks([first, second, note], len(note.text) + len(first.text))
+    assert note in narrow and len(narrow) == 2
+
+
+def test_multiple_named_schemes_are_resolved_from_corpus_metadata():
+    ids = filters_for("Compare Pragati and Indira Gandhi.")["scheme_id"]
+    assert any("pragati" in sid for sid in ids)
+    assert any("indira" in sid for sid in ids)
+    ids = filters_for("Pragati technical diploma documents")["scheme_id"]
+    assert len(ids) == 1 and "diploma" in ids[0]
+
+
+def test_scheme_acronym_does_not_match_another_scheme_generic_prefix():
+    ids = filters_for("Who is eligible for PM-YASASVI?")["scheme_id"]
+    assert len(ids) == 1 and "yasasvi" in ids[0]

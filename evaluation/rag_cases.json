@@ -82,6 +82,11 @@
     "no_sources": true,
     "patterns": [
       "scholarship"
+    ],
+    "max_llm_calls": 0,
+    "forbidden_patterns": [
+      "1\\s*\\+\\s*2\\s*=",
+      "equals?\\s+3"
     ]
   },
   {

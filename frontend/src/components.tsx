@@ -1,4 +1,5 @@
 import type { Citation } from "./types";
+import { schemeHref } from "./navigation";
 
 export function human(value: string) {
   return value.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -17,12 +18,13 @@ export function Source({ citation }: { citation: Citation }) {
       <span className="source-mark">↗</span>
       <div>
         <strong>{citation.scheme_name}</strong>
+        <a href={schemeHref(citation.scheme_id)}>View Full Scheme</a>
         {url ? (
           <a href={url} target="_blank" rel="noreferrer">
-            View source
+            Official source
           </a>
         ) : (
-          <small>Source information unavailable in dataset</small>
+          <small>Official source link unavailable in dataset</small>
         )}
         <small>{citation.source_name || "Scholarship dataset"}</small>
       </div>

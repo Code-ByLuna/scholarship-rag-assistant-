@@ -46,6 +46,38 @@ test("browse and immediately ask the assistant with relevant sources and convers
   await expect(page.locator(".source strong")).toContainText(
     "Pragati Scholarship",
   );
+  await page.route("**/api/sessions/*", async (route) => {
+    if (route.request().method() !== "GET") return route.continue();
+    await route.fulfill({
+      json: {
+        context: {
+          messages: [
+            { role: "user", content: { question: "Tell me about Pragati." } },
+            {
+              role: "assistant",
+              content: {
+                answer:
+                  "Pragati provides INR 50,000 per year for educational expenses.",
+                status: "success",
+                sources: [],
+              },
+            },
+          ],
+        },
+      },
+    });
+  });
+  await page.getByRole("link", { name: "View Full Scheme" }).click();
+  await expect(page).toHaveURL(
+    /#\/scholarships\/pragati_scholarship_scheme_for_girl_students_technical_degree$/,
+  );
+  await expect(
+    page.getByRole("heading", { name: "Application procedure", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Exclusions", exact: true }),
+  ).toBeVisible();
+  await page.locator('nav a[href="#/assistant"]').click();
   await page
     .getByLabel("Ask a scholarship question")
     .fill("How much does it provide?");
@@ -99,4 +131,43 @@ test("mobile overview fits the viewport", async ({ page }) => {
     ),
   ).toBe(true);
   await page.screenshot({ path: "../var/mobile.png", fullPage: true });
+});
+
+test("off-domain requests skip model generation and return scholarship guidance", async ({
+  page,
+}) => {
+  await page.goto("/#/assistant");
+  await page.getByLabel("Ask a scholarship question").fill("What is 1+1?");
+  const response = page.waitForResponse((r) =>
+    r.url().endsWith("/api/agent/query"),
+  );
+  await page.getByRole("button", { name: /Send/ }).click();
+  const data = await (await response).json();
+  expect(data.status).toBe("out_of_scope");
+  expect(data.sources).toEqual([]);
+  await expect(page.locator(".message.assistant")).toContainText(
+    "I can help with the scholarship schemes",
+  );
+  await expect(page.locator(".message.assistant")).not.toContainText("1+1=2");
+});
+
+test("all 16 scheme identifiers resolve to complete internal detail pages", async ({
+  page,
+  request,
+}) => {
+  const response = await request.post("/api/scholarships/search", {
+    data: { top_k: 16 },
+  });
+  const { results } = await response.json();
+  expect(results).toHaveLength(16);
+  await page.goto("/#/scholarships");
+  for (const scheme of results) {
+    await page.evaluate((id) => {
+      window.location.hash = "/scholarships/" + encodeURIComponent(id);
+    }, scheme.scheme_id);
+    await expect(page.locator(".detail-heading h2")).toHaveText(scheme.name);
+    await expect(
+      page.getByRole("heading", { name: "Application procedure", exact: true }),
+    ).toBeVisible();
+  }
 });

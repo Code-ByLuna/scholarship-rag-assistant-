@@ -17,7 +17,7 @@ import django
 
 django.setup()
 import numpy as np
-from apps.navigator.models import EvaluationRun
+from apps.navigator.models import AgentExecution, EvaluationRun
 from core import corpus, memory
 from core.agent.workflow import query
 from core.rag.documents import prepare_documents
@@ -44,6 +44,9 @@ def main():
         help="Call configured Gemini for 16 RAG acceptance cases and conversation setup turns.",
     )
     parser.add_argument("--output", default=None)
+    parser.add_argument(
+        "--cases", default="evaluation/rag_cases.json", help="Live acceptance fixture JSON path."
+    )
     parser.add_argument(
         "--only", action="append", help="Run one named acceptance case; may be repeated."
     )
@@ -91,7 +94,7 @@ def main():
             "Retrieval-only measurements; no generation, answer accuracy or eligibility-decision score is claimed."
         )
     else:
-        cases = json.loads((ROOT / "evaluation/rag_cases.json").read_text(encoding="utf-8"))
+        cases = json.loads((ROOT / args.cases).read_text(encoding="utf-8"))
         if args.only:
             cases = [case for case in cases if case["id"] in args.only]
             if len(cases) != len(set(args.only)):
@@ -116,6 +119,17 @@ def main():
                 )
                 duration = (time.perf_counter() - t) * 1000
                 data = response.model_dump()
+                execution = (
+                    AgentExecution.objects.filter(request_id="acceptance-" + case["id"])
+                    .order_by("-id")
+                    .first()
+                )
+                usage = list(
+                    execution.llm_calls.values(
+                        "phase", "input_tokens", "output_tokens", "status", "latency_ms"
+                    )
+                )
+                retrieval_calls = execution.tools.count()
                 ids = {s.scheme_id for s in response.sources}
                 exact_evidence = all(
                     s.retrieved_from in documents
@@ -135,6 +149,13 @@ def main():
                         for pattern in case.get("patterns", [])
                     ),
                     "setup_success": setup is None or setup.status == "success",
+                    "call_budget": len(usage) <= case.get("max_llm_calls", 4),
+                    "off_domain_skips_retrieval": response.status != "out_of_scope"
+                    or retrieval_calls == 0,
+                    "forbidden_answers_absent": not any(
+                        re.search(pattern, response.answer, re.I)
+                        for pattern in case.get("forbidden_patterns", [])
+                    ),
                 }
                 entry = {
                     "id": case["id"],
@@ -142,6 +163,10 @@ def main():
                     "passed": all(checked.values()),
                     "checks": checked,
                     "response": data,
+                    "llm_usage": usage,
+                    "retrieval_calls": retrieval_calls,
+                    "llm_input_tokens": sum(row["input_tokens"] or 0 for row in usage),
+                    "llm_output_tokens": sum(row["output_tokens"] or 0 for row in usage),
                     "latency_ms": round(duration, 3),
                 }
                 report["results"].append(entry)

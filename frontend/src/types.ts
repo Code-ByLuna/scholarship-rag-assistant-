@@ -17,6 +17,10 @@ export type Scheme = {
   documents_required: unknown;
   application: unknown;
   important_notes: string[];
+  target_groups?: unknown;
+  tags?: unknown;
+  exclusions?: unknown;
+  selection?: unknown;
   citation?: Citation;
 };
 export type Answer = {

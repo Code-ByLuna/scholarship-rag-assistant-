@@ -29,6 +29,10 @@ def rag(monkeypatch):
         return {"chunks": chunks, "warnings": [], "timings_ms": {}}
 
     monkeypatch.setattr("core.agent.tools.retrieve", retrieve)
+    monkeypatch.setattr(
+        "core.agent.workflow.classify_query",
+        lambda question: {"out_of_scope": False, "intent": "general", "sections": []},
+    )
     return chunks, contexts
 
 
@@ -167,7 +171,7 @@ def test_correct_quote_cannot_hide_an_unsupported_paraphrase(rag):
             return Generation(
                 json.dumps(
                     {
-                        "answer": "You are guaranteed INR 10 lakh.",
+                        "answer": "Everyone is guaranteed a scholarship award.",
                         "status": "success",
                         "supports": [{"chunk_id": chunk.chunk_id, "quote": chunk.text}],
                     }
@@ -188,25 +192,23 @@ def test_missing_key_is_explicit_error_without_a_fake_answer(monkeypatch, rag):
     assert answer.sources == [] and "50000" not in answer.answer
 
 
-def test_off_topic_is_generated_even_without_sources(monkeypatch):
+def test_off_topic_skips_retrieval_and_all_provider_calls(monkeypatch):
     monkeypatch.setattr(
-        "core.agent.tools.retrieve",
-        lambda **kwargs: {"chunks": [], "warnings": [], "timings_ms": {}},
+        "core.agent.workflow.classify_query",
+        lambda question: {"out_of_scope": True, "intent": "general", "sections": []},
     )
 
-    class Maths:
-        name, model = "mock", "test"
+    def never_called(*args, **kwargs):
+        pytest.fail("Out-of-domain queries must not call retrieval or Gemini")
 
-        def generate(self, context):
-            if context.get("task") == "verify_grounding":
-                return Generation('{"supported":true,"issues":[]}')
-            return Generation(
-                '{"answer":"1 + 2 = 3. You can also ask me about scholarships.","status":"out_of_scope","supports":[]}'
-            )
-
-    monkeypatch.setattr("core.llm.configured_providers", lambda: [Maths()])
-    answer = query(QueryRequest(question="What is 1+2?"), "test")
-    assert answer.status == "out_of_scope" and "3" in answer.answer and answer.sources == []
+    monkeypatch.setattr("core.agent.tools.retrieve", never_called)
+    monkeypatch.setattr("core.llm.configured_providers", never_called)
+    result = query(QueryRequest(question="What is 1+1?"), "outside-test")
+    assert result.status == "out_of_scope" and result.sources == []
+    assert "I can help with the scholarship schemes" in result.answer
+    assert "= 2" not in result.answer
+    assert not AgentExecution.objects.get(request_id="outside-test").tools.exists()
+    assert not LLMUsageLog.objects.exists()
 
 
 def test_vector_outage_does_not_bypass_rag(monkeypatch):
@@ -268,7 +270,7 @@ def test_grounding_feedback_is_used_for_the_single_repair(rag):
             text = (
                 "Pragati provides INR 50,000 per year."
                 if context.get("review_feedback")
-                else "Pragati provides INR 10 lakh."
+                else "Every applicant is guaranteed a scholarship award."
             )
             return Generation(
                 json.dumps(
@@ -337,3 +339,105 @@ def test_grounding_review_must_examine_retrieved_source_notes():
     assert validate_review(
         '{"supported":true,"issues":[],"notes_examined":["notes:0"]}', context
     ).supported
+
+
+def test_simple_lookup_uses_one_generation_and_keeps_exact_answer(monkeypatch, rag, generated):
+    monkeypatch.setenv("LLM_GROUNDING_REVIEW", "auto")
+    monkeypatch.setattr(
+        "core.agent.workflow.classify_query",
+        lambda question: {"out_of_scope": False, "intent": "benefits", "sections": ["benefits"]},
+    )
+    result = query(QueryRequest(question="How much does Pragati provide?"), "simple")
+    assert result.answer == generated[0]
+    assert LLMUsageLog.objects.filter(execution__request_id="simple").count() == 1
+    assert LLMUsageLog.objects.get(execution__request_id="simple").phase == "generation"
+
+
+def test_semantic_domain_failure_does_not_bypass_local_check(monkeypatch):
+    def broken(question):
+        raise OSError("missing local embeddings")
+
+    monkeypatch.setattr("core.agent.workflow.classify_query", broken)
+    result = query(QueryRequest(question="Pragati"), "domain-failure")
+    assert result.error.code == "DOMAIN_CHECK_UNAVAILABLE"
+    assert not LLMUsageLog.objects.exists()
+
+
+def test_auto_review_is_retained_for_conflicts_numbers_and_comparisons(monkeypatch):
+    from core.llm import needs_grounding_review
+    from core.schemas import GroundedDraft
+
+    monkeypatch.setenv("LLM_GROUNDING_REVIEW", "auto")
+    draft = GroundedDraft(answer="A supported answer", status="success", supports=[])
+    assert needs_grounding_review({"intent": "comparison"}, draft)
+    assert needs_grounding_review({"question": "Does it pay 10 lakh?"}, draft)
+    assert needs_grounding_review({"sources": [{"section": "important_notes"}]}, draft)
+    assert not needs_grounding_review(
+        {"intent": "documents", "question": "Which documents?"}, draft
+    )
+
+
+def test_optional_query_logs_redact_credentials():
+    from core.observability import redact_query
+
+    assert "secret" not in redact_query("password=secret api_key=secret bearer secret")
+
+
+def test_clarification_has_correct_status_without_source_claims(rag):
+    from pydantic import ValidationError
+
+    data = {
+        "answer": "Which study level are you interested in?",
+        "status": "insufficient_evidence",
+        "supports": [],
+    }
+    assert (
+        validate_draft(
+            json.dumps(data), rag[0], [rag[0][0].scheme_id], intent="clarification"
+        ).status
+        == "insufficient_evidence"
+    )
+    with pytest.raises(ValidationError):
+        validate_draft(json.dumps(dict(data, status="success")), rag[0], intent="clarification")
+
+
+def test_invalid_quote_receives_specific_feedback_before_one_repair(rag):
+    chunk = rag[0][0]
+    seen = []
+
+    class QuoteRepair:
+        name, model = "mock", "test"
+
+        def generate(self, context):
+            seen.append(context)
+            if context.get("task") == "verify_grounding":
+                return Generation('{"supported":true,"issues":[]}')
+            quote = chunk.text if context.get("review_feedback") else "noncontiguous invented span"
+            return Generation(
+                json.dumps(
+                    {
+                        "answer": "Pragati provides INR 50,000 annually.",
+                        "status": "success",
+                        "supports": [{"chunk_id": chunk.chunk_id, "quote": quote}],
+                    }
+                )
+            )
+
+    execution = AgentExecution.objects.create(request_id="quote-repair")
+    draft, warnings, _ = grounded_generation({}, [chunk], execution, [QuoteRepair()])
+    assert draft is not None and draft.supports[0].quote == chunk.text
+    assert "contiguous" in seen[1]["review_feedback"]["issues"][0]
+    assert execution.llm_calls.count() == 3
+
+
+def test_numeric_error_is_rejected_even_with_a_valid_quote(rag):
+    chunk = rag[0][0]
+    data = {
+        "answer": "Pragati pays INR 500,000 annually.",
+        "status": "success",
+        "supports": [{"chunk_id": chunk.chunk_id, "quote": chunk.text}],
+    }
+    with pytest.raises(ValueError):
+        validate_draft(json.dumps(data), [chunk])
+    data["answer"] = "Pragati pays INR 0.5 lakh annually."
+    assert validate_draft(json.dumps(data), [chunk]).status == "success"

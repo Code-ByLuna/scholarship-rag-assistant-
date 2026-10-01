@@ -1,36 +1,44 @@
-# Retrieval and grounded generation
+# Retrieval, domain detection and grounded generation
 
-Retained: authoritative JSON, 150-word section chunking, source provenance,
-`sentence-transformers/all-MiniLM-L6-v2` CPU embeddings, normalized cosine search
-with FAISS IndexFlatIP, version/checksum validation, atomic CURRENT pointer, and
-explicit ingestion. Existing 139 indexed chunks remain usable; the corpus and
-chunking were not edited. Every scholarship question queries the semantic store.
+The 16-record authoritative JSON, 139 section chunks, original-record provenance,
+MiniLM CPU embeddings, FAISS IndexFlatIP, checksums/versioned CURRENT pointer and
+explicit ingestion are retained unchanged. Every scheme has indexed application
+information. No index rebuild is needed for this change: existing scheme IDs and
+section metadata already support section retrieval and internal navigation.
 
-Scheme/category metadata constraints narrow candidates before similarity search.
-Name/category detection assists retrieval only; it never generates an answer or
-infers a permanent personal profile. Broad queries diversify nearest matches across
-schemes. Hard keyword section routing and lexical failure answers were removed.
-Additional important-notes chunks for retrieved schemes are fetched from the same
-vector store, keeping contradictions visible beside amounts and application facts.
+The API first embeds the raw question locally and compares it with cached domain
+and information-need descriptions. This has no scheme eligibility rules, topic
+if/else rejection list, generated scholarship facts or provider calls. Confident
+unrelated requests return out_of_scope with scholarship guidance, no sources, no
+retrieval tool, no Gemini calls. Uncertain requests proceed to bounded RAG. A missing
+local model returns an explicit error; it is never downloaded during a request.
 
-Conversation references expand the retrieval query with the previously discussed
-scholarship names. Both user questions and assistant answers reach the prompt.
-Off-topic questions still pass through the bounded flow; Gemini recognizes their
-scope and returns a natural response with no unrelated scholarship sources.
+Corpus-derived names and explicit categories constrain candidates. For information
+need classification, matched name words are normalized without changing the search
+question. Section classification is semantic, not keyword-based answer generation.
+Focused requests search relevant sections, such as benefits, documents or application.
+Broad queries diversify a bounded shortlist; comparisons/discovery include its
+criteria, benefits and available procedures. Relevant cautionary notes are preserved.
 
-Generation receives the question, limited conversation history and actual retrieved
-source text, including scheme/section identities. Gemini returns natural answer
-text, a status, and supporting quote references. The quotes are exact evidence,
-not the display answer. The server rejects unknown references, unsupported quotes,
-extra output fields and invented links. A second model call reviews the meaning of
-paraphrased claims against cited information and checks relevant contradictions.
-A failed review supplies correction feedback for one bounded generation retry.
+Context preparation deduplicates whole chunks by scheme, section and content, so
+identical amounts from distinct schemes remain separate sources. It does not rewrite
+facts or quotes. Notes are prioritized before enforcing RAG_CONTEXT_MAX_CHARS (10000).
+Recent history is bounded to four messages and RAG_HISTORY_MAX_CHARS (2000). The
+existing total LLM input/output limits still apply. No complete raw scheme records
+or entire dataset is passed to the provider in a normal query.
 
-A missing/stale/corrupted index is an explicit error. No keyword replacement or
-ungrounded chatbot bypass is used. Ingestion remains an explicit management command.
-A missing API key, provider refusal, rate limit, timeout, network failure or rejected
-answer is also explicit; configured fallback models may be tried, but source excerpts
-are never presented as a generated answer after generation fails.
+Gemini returns answer/status/supports. Natural answer text reaches React unchanged;
+exact quotes identify evidence separately. Schema, exact membership, generic numeric and URL checks
+apply to every scholarship generation. LLM_GROUNDING_REVIEW=auto adds a separate
+semantic review for uncertainty/complexity; simple lookups need one call. always
+reviews every generation. Review receives cited evidence and important notes, not
+all irrelevant retrieved chunks. One bounded repair and configured provider fallback
+remain available, with real call/token accounting and explicit failures.
 
-The review is a useful safeguard, not proof of factual entailment. Human verification
-and official sources remain necessary for current requirements and deadlines.
+Source cards always offer an internal View Full Scheme link based on the verified
+scheme ID and existing #/scholarships/{id} route. An available official link is
+additional; a missing external link never prevents internal source navigation.
+
+Semantic classification and grounding are fallible. English-only quality is tested;
+multilingual quality, complete discovery and universal factual correctness are not
+established. See DEMO_READINESS.md for measured results and acceptance limits.

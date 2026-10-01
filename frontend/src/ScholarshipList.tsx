@@ -1,3 +1,4 @@
+import { schemeHref } from "./navigation";
 import type { Scheme } from "./types";
 type Props = {
   route: string;
@@ -52,9 +53,7 @@ export default function ScholarshipList({
             </p>
             <div className="card-footer">
               <span>Source record available</span>
-              <a href={"#/scholarships/" + encodeURIComponent(s.scheme_id)}>
-                View details ↗
-              </a>
+              <a href={schemeHref(s.scheme_id)}>View details ↗</a>
             </div>
           </article>
         ))}

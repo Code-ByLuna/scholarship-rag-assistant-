@@ -1,5 +1,6 @@
 """Conversational LangGraph: query context -> semantic retrieval -> grounded LLM."""
 
+import hashlib
 import json
 import os
 import re
@@ -13,6 +14,7 @@ from core import corpus, memory
 from core.agent.tools import RETRIEVAL_TOOL, ToolFailure, invoke
 from core.llm import grounded_generation
 from core.observability import event
+from core.rag.query import REDIRECT, classify_query
 from core.rag.retrieval import filters_for
 from core.schemas import Citation, ScholarshipAnswer
 
@@ -31,6 +33,7 @@ class State(TypedDict, total=False):
     timings: dict
     answer: ScholarshipAnswer
     iterations: int
+    classification: dict
 
 
 def step(state):
@@ -41,6 +44,24 @@ def step(state):
 
 def plan(state: State):
     question = state["question"]
+    try:
+        classification = classify_query(question)
+    except Exception as exc:
+        event("domain_check_failure", error_type=type(exc).__name__)
+        return {
+            "iterations": step(state),
+            "answer": failure_answer(
+                "DOMAIN_CHECK_UNAVAILABLE",
+                "Scholarship search is unavailable. Please try again after the local model is ready.",
+            ),
+        }
+    event("domain_check", **classification)
+    if classification["out_of_scope"]:
+        event("out_of_scope_redirect", retrieval_skipped=True, llm_calls=0)
+        return {
+            "iterations": step(state),
+            "answer": ScholarshipAnswer(answer=REDIRECT, status="out_of_scope", sources=[]),
+        }
     previous_ids = (
         [state["context_scheme_id"]]
         if state.get("context_scheme_id")
@@ -61,7 +82,12 @@ def plan(state: State):
     if ids:
         names = "; ".join(s["name"] for s in corpus.records(ids))
         retrieval_question += "\nScholarships under discussion: " + names
-    return {"iterations": step(state), "scheme_ids": ids, "retrieval_question": retrieval_question}
+    return {
+        "iterations": step(state),
+        "scheme_ids": ids,
+        "retrieval_question": retrieval_question,
+        "classification": classification,
+    }
 
 
 def retrieve_node(state: State):
@@ -73,10 +99,17 @@ def retrieve_node(state: State):
                 "scheme_ids": state.get("scheme_ids"),
                 "category": state.get("category"),
                 "top_k": state["top_k"],
+                "intent": state["classification"]["intent"],
+                "sections": state["classification"]["sections"],
             },
             state["execution"],
         )
-        event("retrieval_result", count=len(retrieved["chunks"]), semantic=True)
+        event(
+            "retrieval_result",
+            count=len(retrieved["chunks"]),
+            semantic=True,
+            **retrieved.get("metrics", {}),
+        )
         return {
             "iterations": step(state),
             "chunks": retrieved["chunks"],
@@ -116,8 +149,13 @@ def answer_node(state: State):
         for m in state.get("history", {}).get("messages", [])
         if m["content"].get("status") != "error"
     ]
+    history = history[-4:]
+    history_budget = int(os.getenv("RAG_HISTORY_MAX_CHARS", "2000"))
+    while history and sum(len(m["text"]) for m in history) > history_budget:
+        history.pop(0)
     context = {
         "question": state["question"],
+        "intent": state["classification"]["intent"],
         "focus_scheme_ids": state.get("scheme_ids"),
         "conversation": history,
         "sources": [
@@ -148,6 +186,8 @@ def answer_node(state: State):
         source_count=len(chunks),
         history_messages=len(context["conversation"]),
         context_characters=len(json.dumps(context, ensure_ascii=False)),
+        retrieved_characters=sum(len(c.text) for c in chunks),
+        estimated_context_tokens=(len(json.dumps(context, ensure_ascii=False)) + 3) // 4,
     )
     draft, problems, llm_ms = grounded_generation(context, chunks, state["execution"])
     if draft is None:
@@ -180,7 +220,11 @@ def build_graph():
     for name, node in [("plan", plan), ("retrieve", retrieve_node), ("answer", answer_node)]:
         graph.add_node(name, node)
     graph.add_edge(START, "plan")
-    graph.add_edge("plan", "retrieve")
+    graph.add_conditional_edges(
+        "plan",
+        lambda state: "stop" if state.get("answer") else "retrieve",
+        {"stop": END, "retrieve": "retrieve"},
+    )
     graph.add_edge("retrieve", "answer")
     graph.add_edge("answer", END)
     return graph.compile()
@@ -193,6 +237,15 @@ def query(payload, request_id: str, session=None) -> ScholarshipAnswer:
     started = time.perf_counter()
     execution = AgentExecution.objects.create(session=session, request_id=request_id)
     execution_status = "FAILED"
+    event(
+        "query_received",
+        query_sha256=hashlib.sha256(payload.question.encode()).hexdigest(),
+        query_characters=len(payload.question),
+    )
+    if os.getenv("RAG_LOG_QUERY_TEXT", "false").lower() == "true":
+        from core.observability import redact_query
+
+        event("query_text", query=redact_query(payload.question))
     try:
         state = GRAPH.invoke(
             {

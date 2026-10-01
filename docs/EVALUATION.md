@@ -31,3 +31,20 @@ verify natural-text rendering, source names, absent profiles and clear provider 
 Browser tests on isolated ports mock provider responses; real provider acceptance
 is measured separately. The previous profile evaluation and 96.7% combined legacy
 score are obsolete and are not claimed for the conversational application.
+
+## Current demo and efficiency checks
+
+`python evaluation/check_retrieval_efficiency.py` checks actual local domain/intent
+embeddings, focused sections, context budgets and all-16 indexed/application coverage.
+`python evaluation/run_eval.py --live --cases evaluation/demo_cases.json --delay 15 --output evaluation/reports/demo_live.json`
+runs 14 current demo scenarios, including benefits, documents, eligibility, application,
+follow-up, comparison/discovery, missing dates, ambiguity and out-of-domain requests.
+It records each actual model phase, tokens, latency and retrieval-call count; the
+fixtures enforce zero calls outside the domain and one for simple lookups.
+`--cases` selects fixtures; `--only` allows a focused rerun. Original 16-case fixtures
+remain, with their old arithmetic expectation changed to scholarship-only redirection.
+
+`retrieval_optimized.json` records the current 30-question retrieval run;
+`efficiency.json` records local classifier/context measurements; `demo_initial.json`
+preserves the first live run's failures; `demo_live.json` records the corrected run.
+See DEMO_READINESS.md for actual results, measured savings and limits.

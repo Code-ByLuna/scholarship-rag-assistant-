@@ -1,4 +1,4 @@
-"""JSON logs without user message/profile/credential contents."""
+"""Correlated JSON metrics; query text is opt-in and credential patterns are redacted."""
 
 import json
 import logging
@@ -50,3 +50,9 @@ class RequestMiddleware:
             return response
         finally:
             request_id.reset(token)
+
+
+def redact_query(text):
+    """Keep common credential formats out of optional development query logs."""
+    text = re.sub(r"(?:AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{16,})", "[redacted]", text)
+    return re.sub(r"(?i)(?:api[_ -]?key|password|bearer)\s*[:=]?\s*[^\s]+", "[redacted]", text)

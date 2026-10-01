@@ -42,3 +42,14 @@ def _embed_query(name: str, text: str):
 
 def embed_query(text: str):
     return _embed_query(model_name(), text).copy()
+
+
+def embed_local_texts(texts: list[str]) -> np.ndarray:
+    """Embed classifier descriptions locally; request handling never downloads models."""
+    with _lock:
+        return np.asarray(
+            get_model(model_name()).encode(
+                texts, normalize_embeddings=True, show_progress_bar=False, batch_size=32
+            ),
+            dtype="float32",
+        )

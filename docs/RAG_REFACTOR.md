@@ -1,5 +1,8 @@
 # Conversational RAG refactor report
 
+Historical report for the earlier refactor (commit 2f14299). Current domain gating,
+review policy, internal source navigation and measurements are in [DEMO_READINESS.md](DEMO_READINESS.md).
+
 Verified on 2026-10-01 in D:/social-hackthon/social-hackthon, Windows, SQLite.
 The existing application now retrieves scholarship evidence and displays Gemini's
 actual generated answer. The personal-profile and deterministic matching workflow

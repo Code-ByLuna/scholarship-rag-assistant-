@@ -25,7 +25,9 @@ Response: answer, sources, status, optional error, request_id, session_id. Sourc
 carry scheme/source identities, available official URL, the supporting reference and
 exact excerpt. Frontend displays distinct cited scholarship names and safe source links.
 `success`, `out_of_scope`, `insufficient_evidence` return 200; `error` returns 503.
-An empty deadline is not a guessed deadline. An off-topic response has no sources.
+An empty deadline is not a guessed deadline. An off-topic response has no sources and skips retrieval/provider calls. It does
+not answer arithmetic, sports, coding or other unrelated requests. Sources use the
+existing scheme_id to open #/scholarships/{id} within this website.
 No deterministic eligibility statuses, rules, traces or profiles are returned.
 
 Health checks configuration, not a live model call. Provider outages can occur even

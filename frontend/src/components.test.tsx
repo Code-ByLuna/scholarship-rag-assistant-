@@ -21,15 +21,25 @@ describe("sources and immediate assistant access", () => {
     render(<Source citation={citation} />);
     expect(screen.getByText("Pragati Scholarship")).toBeInTheDocument();
     expect(
-      screen.getByText("Source information unavailable in dataset"),
+      screen.getByText("Official source link unavailable in dataset"),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "View Full Scheme" }),
+    ).toHaveAttribute("href", "#/scholarships/pragati");
+    expect(
+      screen.queryByRole("link", { name: "Official source" }),
+    ).not.toBeInTheDocument();
   });
   it("rejects unsafe source URL protocols", () => {
     render(
       <Source citation={{ ...citation, source_url: "javascript:alert(1)" }} />,
     );
-    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "View Full Scheme" }),
+    ).toHaveAttribute("href", "#/scholarships/pragati");
+    expect(
+      screen.queryByRole("link", { name: "Official source" }),
+    ).not.toBeInTheDocument();
   });
   it("allows ordinary official source links", () => {
     render(
@@ -40,10 +50,9 @@ describe("sources and immediate assistant access", () => {
         }}
       />,
     );
-    expect(screen.getByRole("link")).toHaveAttribute(
-      "href",
-      "https://example.org/scholarship",
-    );
+    expect(
+      screen.getByRole("link", { name: "Official source" }),
+    ).toHaveAttribute("href", "https://example.org/scholarship");
   });
   it("opens scholarship questions without a profile workflow", () => {
     render(<Dashboard schemes={[]} />);
@@ -77,6 +86,9 @@ describe("sources and immediate assistant access", () => {
       await screen.findByText("Pragati can help cover your education costs."),
     ).toBeInTheDocument();
     expect(screen.getByText("Sources (1)")).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("link", { name: "View Full Scheme" }),
+    ).toHaveLength(1);
     const sent = vi.mocked(api).mock.calls[1][1] as Record<string, unknown>;
     expect(sent).toEqual({
       question: "Tell me about Pragati",

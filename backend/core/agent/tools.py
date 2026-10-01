@@ -13,7 +13,7 @@ from pydantic import ValidationError
 
 from core.observability import event
 from core.rag.retrieval import retrieve
-from core.schemas import SearchRequest
+from core.schemas import RetrievalRequest
 
 _POOL = ThreadPoolExecutor(max_workers=4, thread_name_prefix="scholarship-tool")
 _CAPACITY = threading.BoundedSemaphore(4)
@@ -30,7 +30,7 @@ def _retrieval(payload):
     return retrieve(**payload.model_dump())
 
 
-RETRIEVAL_TOOL = Tool("scholarship_retrieval", SearchRequest, _retrieval)
+RETRIEVAL_TOOL = Tool("scholarship_retrieval", RetrievalRequest, _retrieval)
 
 
 class ToolFailure(Exception):

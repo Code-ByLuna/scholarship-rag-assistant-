@@ -40,6 +40,27 @@ class SearchRequest(StrictModel):
     top_k: int = Field(default=8, ge=1, le=16)
 
 
+class RetrievalRequest(SearchRequest):
+    intent: str | None = Field(default=None, max_length=30)
+    sections: (
+        list[
+            Literal[
+                "objective",
+                "target_groups",
+                "tags",
+                "benefits",
+                "eligibility",
+                "documents_required",
+                "application",
+                "exclusions",
+                "selection",
+                "important_notes",
+            ]
+        ]
+        | None
+    ) = Field(default=None, max_length=10)
+
+
 class QueryRequest(SearchRequest):
     context_scheme_id: str | None = Field(default=None, min_length=1, max_length=200)
     question: str = Field(min_length=1, max_length=2000)
@@ -55,6 +76,11 @@ class GroundedDraft(StrictModel):
     answer: str = Field(min_length=1, max_length=8000)
     status: Literal["success", "out_of_scope", "insufficient_evidence"]
     supports: list[Quote] = Field(max_length=16)
+
+
+class ClarificationDraft(GroundedDraft):
+    status: Literal["insufficient_evidence"]
+    supports: list[Quote] = Field(default_factory=list, max_length=0)
 
 
 class GroundingReview(StrictModel):
