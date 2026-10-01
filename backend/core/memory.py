@@ -3,7 +3,7 @@
 import hashlib
 import secrets
 
-from apps.navigator.models import ConversationMessage, StudentProfile, UserSession
+from apps.navigator.models import ConversationMessage, UserSession
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
@@ -27,23 +27,24 @@ def get_session(session_id: str, token: str) -> UserSession:
 
 def context(session: UserSession) -> dict:
     messages = list(session.messages.order_by("-id")[:8])
-    profile = getattr(session, "student_profile", None)
     last_ids = []
     for message in messages:
-        if message.role == "assistant":
-            last_ids = message.content.get("scheme_ids", [])
-            break
+        if message.role == "assistant" and message.content.get("status") in (
+            "success",
+            "insufficient_evidence",
+        ):
+            ids = list(dict.fromkeys(s["scheme_id"] for s in message.content.get("sources", [])))
+            if ids:
+                last_ids = ids
+                break
     return {
-        "profile": profile.values if profile else None,
         "scheme_ids": last_ids,
         "messages": [{"role": m.role, "content": m.content} for m in reversed(messages)],
     }
 
 
 @transaction.atomic
-def save_turn(session, question, answer, profile=None):
+def save_turn(session, question, answer):
     ConversationMessage.objects.create(session=session, role="user", content={"question": question})
     ConversationMessage.objects.create(session=session, role="assistant", content=answer)
-    if profile is not None:
-        StudentProfile.objects.update_or_create(session=session, defaults={"values": profile})
     session.save(update_fields=["updated_at"])

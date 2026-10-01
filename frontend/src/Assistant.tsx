@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
-import { Explanation, Source } from "./components";
-import type { Answer, Profile } from "./types";
-
+import { Source } from "./components";
+import type { Answer } from "./types";
 type Message = {
   role: "user" | "assistant";
   question?: string;
@@ -10,13 +9,7 @@ type Message = {
 };
 type Session = { session_id: string; session_token: string };
 
-export default function Assistant({
-  profile,
-  schemeId,
-}: {
-  profile: Profile;
-  schemeId?: string;
-}) {
+export default function Assistant({ schemeId }: { schemeId?: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [question, setQuestion] = useState("");
   const [session, setSession] = useState<Session | null>(null);
@@ -29,30 +22,36 @@ export default function Assistant({
         const stored = sessionStorage.getItem("scholar-session");
         const saved: Session | null = stored ? JSON.parse(stored) : null;
         if (saved) {
-          const data = await api<{
-            context: {
-              messages: {
-                role: "user" | "assistant";
-                content: Answer & { question?: string };
-              }[];
-            };
-          }>("/sessions/" + saved.session_id, undefined, saved.session_token);
-          if (active) {
-            setSession(saved);
-            setMessages(
-              data.context.messages.map((m) =>
-                m.role === "user"
-                  ? { role: m.role, question: m.content.question }
-                  : { role: m.role, answer: m.content },
-              ),
-            );
+          try {
+            const data = await api<{
+              context: {
+                messages: {
+                  role: "user" | "assistant";
+                  content: Answer & { question?: string };
+                }[];
+              };
+            }>("/sessions/" + saved.session_id, undefined, saved.session_token);
+            if (active) {
+              setSession(saved);
+              setMessages(
+                data.context.messages
+                  .filter((m) => m.content.status !== "error")
+                  .map((m) =>
+                    m.role === "user"
+                      ? { role: m.role, question: m.content.question }
+                      : { role: m.role, answer: m.content },
+                  ),
+              );
+            }
+            return;
+          } catch {
+            sessionStorage.removeItem("scholar-session");
           }
-        } else {
-          const created = await api<Session>("/sessions", {});
-          if (active) {
-            sessionStorage.setItem("scholar-session", JSON.stringify(created));
-            setSession(created);
-          }
+        }
+        const created = await api<Session>("/sessions", {});
+        if (active) {
+          sessionStorage.setItem("scholar-session", JSON.stringify(created));
+          setSession(created);
         }
       } catch (err) {
         if (active)
@@ -69,7 +68,7 @@ export default function Assistant({
   async function send(event: React.FormEvent) {
     event.preventDefault();
     if (!question.trim() || !session) return;
-    const text = question;
+    const text = question.trim();
     setQuestion("");
     setBusy(true);
     setError("");
@@ -80,21 +79,46 @@ export default function Assistant({
         {
           question: text,
           session_id: session.session_id,
-          ...(Object.keys(profile).length ? { profile } : {}),
-          ...(schemeId ? { scheme_ids: [schemeId] } : {}),
+          ...(schemeId ? { context_scheme_id: schemeId } : {}),
         },
         session.session_token,
       );
+      if (answer.status === "error")
+        throw new Error(answer.error?.message || answer.answer);
       setMessages((m) => [...m, { role: "assistant", answer }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Assistant unavailable.");
+      setQuestion(text);
     } finally {
       setBusy(false);
     }
   }
-  function reset() {
-    sessionStorage.removeItem("scholar-session");
-    window.location.reload();
+  async function reset() {
+    if (!session || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      await api<void>(
+        "/sessions/" + session.session_id,
+        undefined,
+        session.session_token,
+        "DELETE",
+      );
+      sessionStorage.removeItem("scholar-session");
+      const created = await api<Session>("/sessions", {});
+      sessionStorage.setItem("scholar-session", JSON.stringify(created));
+      setSession(created);
+      setMessages([]);
+      setQuestion("");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not start a new conversation.",
+      );
+    } finally {
+      setBusy(false);
+    }
   }
   return (
     <section className="panel chat">
@@ -102,9 +126,13 @@ export default function Assistant({
         <div>
           <span className="eyebrow">ANSWERS WITH EVIDENCE</span>
           <h2>Your scholarship guide</h2>
-          <p>Ask about benefits, documents, or the rules behind a result.</p>
+          <p>Ask anything about the scholarships in the dataset.</p>
         </div>
-        <button className="button subtle" onClick={reset}>
+        <button
+          className="button subtle"
+          disabled={busy || !session}
+          onClick={reset}
+        >
           New conversation
         </button>
       </div>
@@ -113,14 +141,14 @@ export default function Assistant({
           <div className="assistant-symbol">✦</div>
           <h3>Start with a question</h3>
           <p>
-            Every fact comes from the scholarship dataset. Eligibility comes
-            from the rule engine.
+            Explore scholarship criteria, benefits, documents, and application
+            procedures. No profile is needed.
           </p>
           <div className="suggestions">
             {[
-              "What scholarships are available for OBC students?",
+              "What is the Pragati Scholarship?",
+              "What scholarships are available for girl students?",
               "What documents are needed for the single girl child scholarship?",
-              "Which scholarships require GATE?",
             ].map((q) => (
               <button key={q} onClick={() => setQuestion(q)}>
                 {q} ↗
@@ -141,28 +169,28 @@ export default function Assistant({
               m.answer && (
                 <>
                   <p className="answer-text">{m.answer.answer}</p>
-                  {m.answer.explanation_state === "DETERMINISTIC_FALLBACK" && (
-                    <small>Showing verified dataset excerpts.</small>
-                  )}
-                  {m.answer.warnings.map((w, j) => (
-                    <p className="notice" key={j}>
-                      {w.message}
-                    </p>
-                  ))}
-                  {m.answer.eligibility.map((r) => (
-                    <details key={r.scheme_id}>
+                  {!!m.answer.sources.length && (
+                    <details>
                       <summary>
-                        {r.scheme_name}: {r.status.replaceAll("_", " ")}
+                        Sources (
+                        {new Set(m.answer.sources.map((s) => s.scheme_id)).size}
+                        )
                       </summary>
-                      <Explanation result={r} />
+                      {m.answer.sources
+                        .filter(
+                          (s, j, all) =>
+                            all.findIndex(
+                              (other) => other.scheme_id === s.scheme_id,
+                            ) === j,
+                        )
+                        .map((citation) => (
+                          <Source
+                            citation={citation}
+                            key={citation.scheme_id}
+                          />
+                        ))}
                     </details>
-                  ))}
-                  <details>
-                    <summary>Sources ({m.answer.citations.length})</summary>
-                    {m.answer.citations.map((c, j) => (
-                      <Source citation={c} key={j} />
-                    ))}
-                  </details>
+                  )}
                 </>
               )
             )}
@@ -171,7 +199,7 @@ export default function Assistant({
       </div>
       {busy && (
         <p className="loading" role="status">
-          Retrieving sources and checking rules…
+          Finding scholarship information and preparing your answer…
         </p>
       )}
       {error && (
@@ -198,8 +226,8 @@ export default function Assistant({
         </button>
       </form>
       <small className="chat-footnote">
-        Dataset facts may need official verification. No missing profile values
-        are assumed.
+        Answers use the available scholarship information. Verify current
+        requirements with the scholarship authority.
       </small>
     </section>
   );

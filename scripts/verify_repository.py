@@ -12,15 +12,15 @@ sys.path.insert(0, str(ROOT / "backend"))
 
 def main():
     from core.corpus import load_dataset
-    from core.schemas import StudentProfile
+    from core.schemas import ScholarshipAnswer
 
     shell = (ROOT / "backend/entrypoint.sh").read_bytes()
     if not shell.startswith(b"#!/bin/sh\n") or b"\r" in shell:
         raise ValueError("Docker entrypoint must be nonempty and use Unix line endings.")
     dataset = load_dataset()
-    schema = json.loads((ROOT / "student_profile_schema.json").read_text(encoding="utf-8"))
-    if schema != StudentProfile.model_json_schema():
-        raise ValueError("Generated profile schema is out of date.")
+    schema = json.loads((ROOT / "assistant_response_schema.json").read_text(encoding="utf-8"))
+    if schema != ScholarshipAnswer.model_json_schema():
+        raise ValueError("Generated assistant response schema is out of date.")
     tracked = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).decode().split("\0")
     failures = []
     patterns = [

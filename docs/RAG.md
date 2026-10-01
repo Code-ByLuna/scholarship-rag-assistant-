@@ -1,25 +1,36 @@
-# Retrieval pipeline
+# Retrieval and grounded generation
 
-JSON -> section chunks (150 words) -> sentence-transformer CPU embeddings ->
-normalized FAISS IndexFlatIP -> scheme metadata filtering -> section filtering ->
-top-k cosine matches -> retrieved quotes -> validated response.
+Retained: authoritative JSON, 150-word section chunking, source provenance,
+`sentence-transformers/all-MiniLM-L6-v2` CPU embeddings, normalized cosine search
+with FAISS IndexFlatIP, version/checksum validation, atomic CURRENT pointer, and
+explicit ingestion. Existing 139 indexed chunks remain usable; the corpus and
+chunking were not edited. Every scholarship question queries the semantic store.
 
-Default embedding model: sentence-transformers/all-MiniLM-L6-v2, selected for compact
-384-dimensional English embeddings and CPU use with the small English corpus.
-EMBEDDING_MODEL is configurable. See the
-[SentenceTransformer API](https://www.sbert.net/docs/package_reference/sentence_transformer/model.html).
-FAISS is behind a VectorStore abstract interface; a Qdrant implementation can implement
-search/save with the same metadata contract. See
-[FAISS persistence](https://github.com/facebookresearch/faiss/wiki/Index-IO%2C-cloning-and-hyper-parameter-tuning).
+Scheme/category metadata constraints narrow candidates before similarity search.
+Name/category detection assists retrieval only; it never generates an answer or
+infers a permanent personal profile. Broad queries diversify nearest matches across
+schemes. Hard keyword section routing and lexical failure answers were removed.
+Additional important-notes chunks for retrieved schemes are fetched from the same
+vector store, keeping contradictions visible beside amounts and application facts.
 
-Run python backend/manage.py ingest_scholarships explicitly; never per query.
-Versions are persisted without pickle; CURRENT switches atomically. Checksums bind
-chunks/index to the corpus hash and model. Persist var/index between deployments.
-Only trusted administrators can write indexes. Re-ingest after changing corpus/model.
+Conversation references expand the retrieval query with the previously discussed
+scholarship names. Both user questions and assistant answers reach the prompt.
+Off-topic questions still pass through the bounded flow; Gemini recognizes their
+scope and returns a natural response with no unrelated scholarship sources.
 
-Each chunk has scheme_id/name/section/chunk_id, source fields and original_record_key.
-Missing URLs remain null. Searches can filter by scheme/category before similarity.
-A missing/broken index produces a visible VECTOR_UNAVAILABLE warning and an extractive
-corpus text-search fallback. That fallback is not reported as semantic retrieval.
+Generation receives the question, limited conversation history and actual retrieved
+source text, including scheme/section identities. Gemini returns natural answer
+text, a status, and supporting quote references. The quotes are exact evidence,
+not the display answer. The server rejects unknown references, unsupported quotes,
+extra output fields and invented links. A second model call reviews the meaning of
+paraphrased claims against cited information and checks relevant contradictions.
+A failed review supplies correction feedback for one bounded generation retry.
 
-Bounded query embedding caches do not contain profile-dependent decisions.
+A missing/stale/corrupted index is an explicit error. No keyword replacement or
+ungrounded chatbot bypass is used. Ingestion remains an explicit management command.
+A missing API key, provider refusal, rate limit, timeout, network failure or rejected
+answer is also explicit; configured fallback models may be tried, but source excerpts
+are never presented as a generated answer after generation fails.
+
+The review is a useful safeguard, not proof of factual entailment. Human verification
+and official sources remain necessary for current requirements and deadlines.

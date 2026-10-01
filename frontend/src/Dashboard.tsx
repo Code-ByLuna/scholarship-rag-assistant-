@@ -1,12 +1,6 @@
-import type { Scheme, Result } from "./types";
+import type { Scheme } from "./types";
 import { navigate } from "./navigation";
-export default function Dashboard({
-  schemes,
-  results,
-}: {
-  schemes: Scheme[];
-  results: Result[];
-}) {
+export default function Dashboard({ schemes }: { schemes: Scheme[] }) {
   return (
     <>
       <section className="hero">
@@ -18,11 +12,14 @@ export default function Dashboard({
             Less guesswork.
           </h2>
           <p>
-            Start with your profile. Discover scholarship possibilities and
-            understand exactly where you stand.
+            Ask about scholarships in your own words. Explore eligibility
+            criteria, benefits, documents, and how to apply.
           </p>
-          <button className="button light" onClick={() => navigate("/profile")}>
-            Build my profile <span>→</span>
+          <button
+            className="button light"
+            onClick={() => navigate("/assistant")}
+          >
+            Ask about scholarships <span>→</span>
           </button>
         </div>
         <div className="hero-art" aria-hidden="true">
@@ -47,18 +44,14 @@ export default function Dashboard({
           <span>Scholarships in the dataset</span>
         </div>
         <div>
-          <span className="stat-icon">✓</span>
-          <strong>
-            {results.filter((r) => r.status === "ELIGIBLE").length}
-          </strong>
-          <span>Confirmed rule matches</span>
+          <span className="stat-icon">✦</span>
+          <strong>AI</strong>
+          <span>Ask in your own words</span>
         </div>
         <div>
-          <span className="stat-icon">◷</span>
-          <strong>
-            {results.filter((r) => r.status === "NEEDS_VERIFICATION").length}
-          </strong>
-          <span>Need more information</span>
+          <span className="stat-icon">✓</span>
+          <strong>Sources</strong>
+          <span>Supporting scholarship information</span>
         </div>
       </section>
       <div className="section-heading">

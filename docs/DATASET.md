@@ -1,6 +1,6 @@
 # Dataset integrity and provenance
 
-The supplied files are preserved. scholarship_dataset_ready.json is authoritative:
+The supplied scholarship data files are preserved. scholarship_dataset_ready.json is authoritative:
 16 unique records; the metadata reports 18 initial source records and two exact
 duplicates removed. The supplied combined_scholarship_schemes_cleaned.json also
 contains 16 preserved records after deduplication. Original keys remain noncontiguous.
@@ -12,9 +12,9 @@ The application creates section chunks from the ready JSON to retain precise sou
 No semantic scholarships are merged and no source facts are added.
 
 Known source issues: ST pre-matric income differs between Details and Eligibility;
-income decision requires verification. Both disability schemes describe offline
+the correct current income threshold requires official verification. Both disability schemes describe offline
 implementation while specifying online application. These notes are preserved and
-shown as SOURCE_CONTRADICTION warnings for relevant assistant answers.
+retrieved with the relevant sections and explained naturally in generated answers.
 
 Many records lack source URLs/names. Empty URLs become null; the UI explicitly says
 "Source information unavailable in dataset". No URLs are synthesized.

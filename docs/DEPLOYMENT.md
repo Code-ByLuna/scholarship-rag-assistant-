@@ -41,3 +41,11 @@ Docker is configured but could not be run here because the Docker CLI/daemon is 
 SQLite/browser/local-vector tests do not establish MySQL or Docker runtime readiness.
 Live LLM setup is optional: LLM_PROVIDER=gemini and GEMINI_API_KEY in private .env.
 Measured LLM performance requires credentials and an explicit evaluation run.
+
+
+Assistant generation requires LLM_PROVIDER=gemini, an available LLM_MODEL and a
+backend-only GEMINI_API_KEY. The default example uses gemini-3.5-flash-lite. A normal
+answer includes a second grounding-review call. Plan token budgets and provider
+quotas accordingly. Index/provider failures return HTTP 503 instead of fake answers.
+Migration 0002 removes the legacy personal-profile table and old profile/rule traces.
+Existing corpus/vector volumes are retained; source eligibility text remains indexed.

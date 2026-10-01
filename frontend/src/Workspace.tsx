@@ -23,7 +23,6 @@ export default function Workspace({
         <nav aria-label="Main navigation">
           {[
             ["/", "◫", "Overview"],
-            ["/profile", "◎", "My profile"],
             ["/scholarships", "▤", "Scholarships"],
             ["/assistant", "✦", "AI assistant"],
           ].map(([path, icon, label]) => (
@@ -36,7 +35,7 @@ export default function Workspace({
               }
               href={"#" + path}
             >
-              <span>{icon}</span>
+              <span aria-hidden="true">{icon}</span>
               {label}
               {label === "AI assistant" && <small>ASK</small>}
             </a>
@@ -45,7 +44,7 @@ export default function Workspace({
         <div className="sidebar-note">
           <span>✓</span>
           <strong>Clarity, with evidence.</strong>
-          <p>See the rules. Know what’s missing. Take your next step.</p>
+          <p>Ask a question. Explore the sources. Take your next step.</p>
         </div>
         <div className="sidebar-footer">
           <span className="avatar">Y</span>
@@ -74,19 +73,19 @@ export default function Workspace({
                 to move forward.
               </p>
             </div>
-            {route !== "/profile" && (
+            {route !== "/assistant" && (
               <button
                 className="button primary"
-                onClick={() => navigate("/profile")}
+                onClick={() => navigate("/assistant")}
               >
-                Update my profile ↗
+                Ask the AI assistant ↗
               </button>
             )}
           </div>
           {children}
           <footer className="page-footer">
             <span>Scholarship Navigator</span>
-            <span>Facts from sources. Decisions from rules.</span>
+            <span>Scholarship guidance, grounded in sources.</span>
           </footer>
         </main>
       </div>

@@ -74,23 +74,29 @@ def search(
 ) -> list[dict]:
     import re
 
-    from core.eligibility import normalize
-
     candidates = records(scheme_ids)
     if category:
-        wanted = normalize(category)
+        aliases = {
+            "sc": "scheduled caste",
+            "st": "scheduled tribe",
+            "obc": "other backward",
+            "ebc": "economically backward",
+            "dnt": "denotified",
+            "sebc": "socially and educationally backward",
+        }
+        wanted = category.strip().lower()
+        label = aliases.get(wanted, wanted)
         candidates = [
             s
             for s in candidates
             if any(
-                r.field == "category"
-                and wanted
-                in (
-                    [normalize(v) for v in r.required_value]
-                    if isinstance(r.required_value, list)
-                    else [normalize(r.required_value)]
+                re.search(
+                    r"\b" + re.escape(term) + r"\b",
+                    json.dumps(
+                        [s.get("eligibility"), s.get("target_groups"), s.get("tags")]
+                    ).lower(),
                 )
-                for r in __import__("core.eligibility", fromlist=["compile_rules"]).compile_rules(s)
+                for term in (wanted, label)
             )
         ]
     terms = set(re.findall(r"[a-z0-9]+", question.lower()))

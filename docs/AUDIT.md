@@ -1,27 +1,17 @@
-# Repository audit and implementation plan
+# Repository audit and refactor
 
-Audit performed 2026-10-01 before modifications. Repository root is the nested
-social-hackthon directory. HEAD 6653d09 contains only .gitattributes; six supplied
-project files are untracked. Branch main, no remote. No AGENTS.md, dependencies,
-environment configuration, syllabus file, profile schema, or application exists.
+The initial repository held the scholarship JSON/JSONL corpus, QA report, a README
+reference and a preliminary eligibility engine. The first implementation added
+Django, React, an optional Gemini evidence selector, FAISS retrieval, profiles and a
+rule engine. That earlier architecture is superseded by this explicit RAG refactor.
+The provided README (1).md remains a historical attachment, not current runtime docs.
 
-The ready JSON contains 16 unique records from 18 sources with two exact duplicates.
-Keep all six supplied files byte-for-byte. The preliminary engine uses scholarship
-ID branches, omits substantial conditions, treats missing lateral entry as failure,
-and can claim eligibility without checking institution/merit. It remains a legacy
-reference; the application uses backend/core/eligibility.py.
+Before editing, the frontend, API, schemas, memory, tools, workflow, Gemini adapter,
+chunker, embeddings, FAISS persistence, corpus/provenance, migrations, tests, evaluation
+and deployment files were inspected. The defect was the quote-only generation contract:
+Gemini returned fragments; the server reconstructed the displayed answer from fragments.
+Every assistant query also called deterministic eligibility, and the UI centered profiles.
 
-Data risks: ST pre-matric income conflict (200000 versus 250000) must remain
-verification, not a guessed threshold. Disability schemes have offline/online
-wording contradictions. Eligible-region lists, admission references, twin exceptions,
-institution approvals, merit and slots need conservative evaluation.
-
-Milestones (each checked, documented, committed): foundation; validated corpus and
-generic rules; Django/API/database; embeddings/vector ingestion; grounded response
-and bounded agent; React UI; evaluation/adversarial checks; deployment/final audit.
-Within these milestones preserve the requested dependency order. No history rewrite
-or force push. Push only if a remote exists.
-
-Python 3.10.10 available. Node/npm/Docker absent from PATH at audit.
-MySQL server and live LLM credentials have not been established.
-SQLite is an explicit local/test option only; production requires MySQL.
+The corrected application retains corpus/semantic retrieval, generates natural answers,
+checks support, removes personal-profile matching and shows only relevant sources.
+See [RAG refactor report](RAG_REFACTOR.md) for file changes and actual verification.

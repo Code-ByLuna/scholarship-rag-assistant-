@@ -1,39 +1,32 @@
 # Security and privacy
 
-API keys, database credentials and Django secret keys are environment-only. .env,
-runtime databases, indexes and caches are ignored; Docker excludes them too.
-Production refuses to start without a secret key and a MySQL configuration.
-Use a dedicated MySQL user, TLS and encrypted database/volume backups.
+API keys, database credentials and Django secrets are backend environment variables.
+`.env`, runtime databases/indexes/caches are ignored and excluded from Docker builds.
+Production requires MySQL and a Django secret. Staff endpoints require authentication.
+Public browsing/chat are throttled and inputs bounded. API errors do not expose stack
+traces, raw provider payloads, credential values or user/model text in logs.
 
-Admin ingestion and usage endpoints require authenticated Django staff; Django admin
-uses normal CSRF protection. Public read/match/chat endpoints are throttled, inputs
-are bounded and validated, and no internal traceback is returned.
+Sessions use random capability tokens, with only SHA-256 hashes stored in SQL.
+The frontend stores the token in sessionStorage and sends it in a header, never a
+URL. The former profile storage/model/routes/forms were removed. Migration 0002 drops
+saved profiles and removes historical profile/rule traces from assistant message JSON.
+A student may voluntarily mention circumstances in conversation; those messages
+are conversation data, not a separately collected or inferred permanent profile.
 
-Session access requires a random 256-bit capability token. Only its hash is stored.
-The frontend stores its token/profile in sessionStorage and sends the token in an
-HTTP header. Tokens are bearer capabilities: possession grants access. Keep the UI
-same-origin over HTTPS and apply a deployment content-security policy. The frontend
-never renders model HTML or executes source URLs; only HTTP(S) citation links work.
+Provider requests transmit the question, relevant conversation history and retrieved
+scholarship evidence. Apply your deployment privacy/retention policy. New conversation
+in the UI deletes the previous protected session. The inactivity cleanup command is
+`python backend/manage.py purge_sessions --days 30`. Audit records contain no transcript.
+Use HTTPS, protect tokens, encrypt backups, and apply appropriate CSP settings.
 
-Logs exclude question/profile/key contents. Provider calls may transmit the relevant
-student profile and question: configure a provider only under your deployment's
-privacy policy. Local deterministic assistance works without sending data to an LLM.
-Browser fonts can contact Google Fonts; use local fonts for strictly offline hosting.
+React renders text, never model HTML. Citation URLs are server-derived and only HTTP(S)
+links render. Retrieved/user text is untrusted. Exact evidence/source checks and a
+separate grounding review constrain free-form paraphrases, but do not guarantee zero
+hallucinations or resistance to every possible prompt injection. The assistant cannot
+issue official eligibility/award decisions. Missing dates/links remain missing.
 
-Schedule python backend/manage.py purge_sessions --days 30 for inactivity retention.
-Students can delete a session via DELETE /api/sessions/{id} with its token.
-Execution audit records retain no transcript; purge related audit records separately
-according to deployment retention policy.
-
-Prompt injection cannot alter profiles, decision statuses or facts. The provider
-only selects exact retrieved quotes; Pydantic shape validation alone would be
-insufficient, so exact quote/source membership is checked too. Input text remains
-untrusted. Residual source clauses and contradictions always need verification.
-
-FAISS/chunk files must be writable only by trusted ingestion administrators.
-Checksums detect corruption, not a malicious writer replacing the manifest.
-Python threads cannot be killed at timeout; bounded slots prevent unbounded growth.
-
-MySQL, Docker and live-provider verification must be completed before describing
-this installation as production-ready. Dependency locks capture the tested versions;
-repeat vulnerability scanning before each deployment.
+Index/checksum files are writable only by trusted ingestion administrators. Checksums
+protect against corruption, not an attacker controlling both index and manifest.
+Thread timeouts cannot kill workers; occupied slots bound concurrency. Browser fonts
+may contact Google Fonts. MySQL and Docker runtime verification remains pending;
+repeat deployment-specific security/dependency checks before production use.

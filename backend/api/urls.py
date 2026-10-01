@@ -5,8 +5,6 @@ from api import assistant, views
 urlpatterns = [
     path("rag/query", assistant.rag_query),
     path("agent/query", assistant.agent_query),
-    path("profile/validate", views.profile_validate),
-    path("eligibility/check", views.eligibility_check),
     path("scholarships/search", views.scholarship_search),
     path("scholarships/<str:scheme_id>", views.scholarship_detail),
     path("sessions", views.sessions_create),

@@ -1,22 +1,33 @@
-# API
+# RAG API
 
-Run backend/manage.py runserver. Swagger UI: /api/docs; generated schema: /api/schema.
-All routes use no trailing slash. Inputs reject unknown fields, invalid types and
-oversized text; errors are structured. X-Request-ID is returned and logged.
+Swagger UI: `/api/docs`; OpenAPI 3.1: `/api/schema`. Routes have no trailing slash.
+Unknown fields and oversized/invalid inputs are rejected. X-Request-ID correlates logs.
 
-POST /api/profile/validate: six initial fields; optional fields are not required.
-POST /api/eligibility/check: {"profile": {...}, "scheme_ids": [...]}; partial profiles allowed.
-POST /api/scholarships/search: question/category/scheme_ids/top_k.
-GET /api/scholarships/{scheme_id}: complete source record and citation.
-POST /api/sessions: {}; returns private session_id and session_token once.
-GET /api/sessions/{session_id}: X-Session-Token required.
-GET /api/health: database/corpus readiness, vector degraded state.
-POST /api/admin/ingest and GET /api/agent/usage: authenticated Django staff only.
+| Route | Purpose |
+|---|---|
+| POST /api/agent/query | Conversational RAG answer |
+| POST /api/rag/query | Same grounded workflow |
+| POST /api/scholarships/search | Browse corpus records; question/category/scheme_ids/top_k |
+| GET /api/scholarships/{scheme_id} | Full source record including eligibility criteria |
+| POST /api/sessions | Create private conversation; returns token once |
+| GET /api/sessions/{session_id} | Read conversation with X-Session-Token |
+| DELETE /api/sessions/{session_id} | Delete conversation with its token |
+| GET /api/health | SQL/corpus/vector readiness and whether LLM is configured |
+| POST /api/admin/ingest | Authenticated staff ingestion |
+| GET /api/agent/usage | Authenticated staff aggregate usage |
 
-Public discovery is anonymous and throttled. Session access uses a randomly generated
-capability token; only its SHA-256 hash is stored. Never put tokens in URLs or logs.
+Query fields: required question; optional scheme_ids, category, top_k (1-16, default
+8), session_id and context_scheme_id. The latter supplies a selected scheme for implicit
+follow-ups; explicit named questions can change topic. scheme_ids remains an explicit filter. A session_id requires X-Session-Token. No profile field is accepted.
+`/api/profile/validate` and `/api/eligibility/check` have been removed and return 404.
 
-POST /api/rag/query and POST /api/agent/query: question, optional profile/scheme_ids/
-category/top_k/session_id. Both return a Pydantic ScholarshipAnswer and run the same
-grounded tool workflow. X-Session-Token is required when session_id is supplied.
-DELETE /api/sessions/{session_id}: token required; deletes private profile/messages.
+Response: answer, sources, status, optional error, request_id, session_id. Sources
+carry scheme/source identities, available official URL, the supporting reference and
+exact excerpt. Frontend displays distinct cited scholarship names and safe source links.
+`success`, `out_of_scope`, `insufficient_evidence` return 200; `error` returns 503.
+An empty deadline is not a guessed deadline. An off-topic response has no sources.
+No deterministic eligibility statuses, rules, traces or profiles are returned.
+
+Health checks configuration, not a live model call. Provider outages can occur even
+when health reports configured. API keys are never returned. Browsing remains useful
+without a provider, but assistant generation requires one.

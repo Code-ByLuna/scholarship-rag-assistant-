@@ -1,640 +1,624 @@
 {
-  "generated_at": "2026-10-01T05:41:11.682810+00:00",
+  "created_at": "2026-10-01T08:29:34.660247+00:00",
   "corpus_sha256": "805a64250c4e33f7d6e116d40cc2b054cb557fe6a69a6314d179a300929042ea",
-  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
-  "vector_index": {
+  "index": {
     "ready": true,
     "version": "faac7d4df3034bafae61db8e52553481",
     "chunks": 139,
     "reason": null
   },
-  "environment": {
-    "database": "sqlite",
-    "llm_provider": "none",
-    "platform": "win32"
-  },
-  "counts": {
-    "profiles": 34,
-    "questions": 30
-  },
-  "scores": {
-    "eligibility_correctness": 1.0,
-    "retrieval_hit_rate": 1.0,
-    "answer_relevance": 1.0,
-    "context_relevance": 0.7689,
-    "faithfulness_exact_source_quotes": 1.0,
-    "citation_correctness": 1.0,
-    "unsupported_excerpt_rate": 0.0,
-    "agent_failure_rate": 0.0
-  },
-  "overall_score": 0.967,
-  "target_met": true,
-  "cold_start_ms": 11091.114,
-  "latency_ms": {
-    "embedding": {
-      "p50": 20.447,
-      "p95": 37.155,
-      "p99": 41.601
-    },
-    "vector_retrieval": {
-      "p50": 0.284,
-      "p95": 1.033,
-      "p99": 1.566
-    },
-    "retrieval_total": {
-      "p50": 22.358,
-      "p95": 42.852,
-      "p99": 49.536
-    },
-    "complete_request": {
-      "p50": 388.463,
-      "p95": 1042.711,
-      "p99": 1257.661
-    }
-  },
-  "llm_latency_ms": null,
-  "limitations": [
-    "Custom deterministic harness, not RAGAS or a human semantic assessment.",
-    "Eligibility fixtures include one toy evaluator contract; it is not a source scholarship.",
-    "Faithfulness tests exact quote support; they do not prove complete answers.",
-    "No live LLM latency/cost measured when LLM_PROVIDER=none.",
-    "Warm process measurements are local observations, not an SLA."
-  ],
-  "profile_results": [
-    {
-      "case": "single girl missing",
-      "expected": "NEEDS_VERIFICATION",
-      "actual": "NEEDS_VERIFICATION",
-      "passed": true
-    },
-    {
-      "case": "wrong gender",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "age above limit",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "wrong PG year",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "wrong study mode",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "single child false",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "income exactly limit",
-      "expected": "NEEDS_VERIFICATION",
-      "actual": "NEEDS_VERIFICATION",
-      "passed": true
-    },
-    {
-      "case": "missing income",
-      "expected": "NEEDS_VERIFICATION",
-      "actual": "NEEDS_VERIFICATION",
-      "passed": true
-    },
-    {
-      "case": "wrong category",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "income above limit",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "disability below threshold",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "disability at threshold",
-      "expected": "NEEDS_VERIFICATION",
-      "actual": "NEEDS_VERIFICATION",
-      "passed": true
-    },
-    {
-      "case": "wrong school class",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "pre disability income limit",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "post disability income limit",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "other scholarship exclusion",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "pragati third year",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "lateral entry unknown",
-      "expected": "NEEDS_VERIFICATION",
-      "actual": "NEEDS_VERIFICATION",
-      "passed": true
-    },
-    {
-      "case": "lateral entry false",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "pragati income fail",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "gate unknown OR",
-      "expected": "NEEDS_VERIFICATION",
-      "actual": "NEEDS_VERIFICATION",
-      "passed": true
-    },
-    {
-      "case": "gate OR fails",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "gate true institution missing",
-      "expected": "NEEDS_VERIFICATION",
-      "actual": "NEEDS_VERIFICATION",
-      "passed": true
-    },
-    {
-      "case": "GATE integrated course needs program verification",
-      "expected": "NEEDS_VERIFICATION",
-      "actual": "NEEDS_VERIFICATION",
-      "passed": true
-    },
-    {
-      "case": "Gujarat domicile wrong",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "Gujarat income above limit",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "conflicting ST income",
-      "expected": "NEEDS_VERIFICATION",
-      "actual": "NEEDS_VERIFICATION",
-      "passed": true
-    },
-    {
-      "case": "percentile exactly 80",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "percentile above 80",
-      "expected": "NEEDS_VERIFICATION",
-      "actual": "NEEDS_VERIFICATION",
-      "passed": true
-    },
-    {
-      "case": "ICAR wrong category",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "institution not approved",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "NMMS low class7 marks",
-      "expected": "NOT_ELIGIBLE",
-      "actual": "NOT_ELIGIBLE",
-      "passed": true
-    },
-    {
-      "case": "NMMS reserved marks",
-      "expected": "NEEDS_VERIFICATION",
-      "actual": "NEEDS_VERIFICATION",
-      "passed": true
-    },
-    {
-      "case": "fully resolved generic rule contract",
-      "expected": "ELIGIBLE",
-      "actual": "ELIGIBLE",
-      "passed": true
-    }
-  ],
-  "question_results": [
+  "mode": "semantic_retrieval",
+  "results": [
     {
       "id": "q01",
-      "question": "What documents are needed for the single girl child scholarship?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 1.0,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:important_notes:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:selection:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:tags:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:eligibility:1",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:documents_required:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:target_groups:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:application:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:objective:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 11763.365099999646,
+        "vector_retrieval": 0.6496999994851649,
+        "retrieval_total": 12080.885199997283
+      }
     },
     {
       "id": "q02",
-      "question": "How much does the single girl child scholarship provide?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 0.5,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:benefits:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:selection:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:target_groups:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:important_notes:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:objective:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:tags:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:eligibility:1",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:exclusions:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 24.200599997129757,
+        "vector_retrieval": 0.6426000036299229,
+        "retrieval_total": 27.602699999988545
+      }
     },
     {
       "id": "q03",
-      "question": "How do I apply for the single girl child scholarship?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 0.5,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:selection:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:target_groups:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:eligibility:1",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:tags:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:application:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:important_notes:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:objective:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:benefits:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 15.276999998604879,
+        "vector_retrieval": 0.643899998976849,
+        "retrieval_total": 17.924699997820426
+      }
     },
     {
       "id": "q04",
-      "question": "What is the age limit for single girl child scholarship?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 0.5,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:selection:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:target_groups:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:objective:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:tags:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:benefits:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:eligibility:1",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:important_notes:0",
+        "post_graduate_indira_gandhi_scholarship_for_single_girl_child:application:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 15.485299998545088,
+        "vector_retrieval": 0.9868999986792915,
+        "retrieval_total": 18.468499998562038
+      }
     },
     {
       "id": "q05",
-      "question": "What scholarships are available for OBC students?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 1.0,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:application:0",
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:benefits:0",
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:selection:0",
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:documents_required:0",
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:eligibility:0",
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:target_groups:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 18.31540000421228,
+        "vector_retrieval": 0.5978999979561195,
+        "retrieval_total": 23.400099998980295
+      }
     },
     {
       "id": "q06",
-      "question": "What is the income limit for PM YASASVI?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 1.0,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:eligibility:0",
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:benefits:0",
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:selection:0",
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:documents_required:0",
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:application:0",
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:target_groups:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 16.564699995797127,
+        "vector_retrieval": 0.49820000276668,
+        "retrieval_total": 19.229799996537622
+      }
     },
     {
       "id": "q07",
-      "question": "What documents are required for PM YASASVI?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 1.0,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:documents_required:0",
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:eligibility:0",
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:application:0",
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:benefits:0",
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:selection:0",
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:target_groups:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 15.204399998765439,
+        "vector_retrieval": 0.9760000029928051,
+        "retrieval_total": 18.281099997693673
+      }
     },
     {
       "id": "q08",
-      "question": "How much are PM YASASVI benefits?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 1.0,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:benefits:0",
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:eligibility:0",
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:selection:0",
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:application:0",
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:documents_required:0",
+        "pm_yasasvi_top_class_college_education_for_obc_ebc_and_dnt_students:target_groups:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 25.393299998540897,
+        "vector_retrieval": 0.27270000282442197,
+        "retrieval_total": 27.90169999934733
+      }
     },
     {
       "id": "q09",
-      "question": "Which scholarships require GATE?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 0.5,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:documents_required:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:tags:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:exclusions:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:eligibility:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:objective:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:benefits:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:application:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 23.080300001311116,
+        "vector_retrieval": 0.5320999989635311,
+        "retrieval_total": 25.90500000223983
+      }
     },
     {
       "id": "q10",
-      "question": "Does the AICTE GATE scholarship require full time study?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 0.5,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:eligibility:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:objective:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:exclusions:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:tags:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:application:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:benefits:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:documents_required:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 20.434599995496683,
+        "vector_retrieval": 0.6795000081183389,
+        "retrieval_total": 23.357099998975173
+      }
     },
     {
       "id": "q11",
-      "question": "How do I apply for the GATE scholarship?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 1.0,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:documents_required:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:tags:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:eligibility:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:objective:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:exclusions:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:application:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:benefits:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 14.438899997912813,
+        "vector_retrieval": 0.26359999901615083,
+        "retrieval_total": 16.85859999997774
+      }
     },
     {
       "id": "q12",
-      "question": "What documents does the GATE scholarship require?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 1.0,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:documents_required:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:tags:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:eligibility:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:objective:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:exclusions:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:application:0",
+        "post_graduate_scholarship_scheme_for_gate_gpat_qualified_students_aicte:benefits:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 11.039199998776894,
+        "vector_retrieval": 0.25260000256821513,
+        "retrieval_total": 12.995400000363588
+      }
     },
     {
       "id": "q13",
-      "question": "What is the disability requirement for Saksham?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 0.5,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:eligibility:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:exclusions:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:documents_required:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:benefits:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:application:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:objective:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:tags:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 10.368399998696987,
+        "vector_retrieval": 0.24619999749120325,
+        "retrieval_total": 12.021000002278015
+      }
     },
     {
       "id": "q14",
-      "question": "What is the income limit for Saksham?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 0.5,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:eligibility:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:benefits:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:exclusions:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:documents_required:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:application:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:objective:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:tags:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 10.188400003244169,
+        "vector_retrieval": 0.25969999842345715,
+        "retrieval_total": 12.121499996283092
+      }
     },
     {
       "id": "q15",
-      "question": "How much does Saksham provide?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 1.0,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:benefits:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:eligibility:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:application:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:exclusions:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:documents_required:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:objective:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:tags:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 13.941700002760626,
+        "vector_retrieval": 0.4655999946407974,
+        "retrieval_total": 15.823199995793402
+      }
     },
     {
       "id": "q16",
-      "question": "What documents are needed for Saksham?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 1.0,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:documents_required:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:eligibility:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:benefits:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:application:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:tags:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:exclusions:0",
+        "aicte_saksham_scholarship_scheme_for_specially_abled_student_degree:objective:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 10.905000002821907,
+        "vector_retrieval": 0.2976000032504089,
+        "retrieval_total": 13.237200000730809
+      }
     },
     {
       "id": "q17",
-      "question": "Can a third-year student apply for Pragati technical degree?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 0.5,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "pragati_scholarship_scheme_for_girl_students_technical_degree:exclusions:0",
+        "pragati_scholarship_scheme_for_girl_students_technical_degree:benefits:0",
+        "pragati_scholarship_scheme_for_girl_students_technical_degree:documents_required:0",
+        "pragati_scholarship_scheme_for_girl_students_technical_degree:application:0",
+        "pragati_scholarship_scheme_for_girl_students_technical_degree:target_groups:0",
+        "pragati_scholarship_scheme_for_girl_students_technical_degree:eligibility:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 14.071300000068732,
+        "vector_retrieval": 0.6423000013455749,
+        "retrieval_total": 16.27349999762373
+      }
     },
     {
       "id": "q18",
-      "question": "What documents does Pragati technical diploma need?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 1.0,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "pragati_scholarship_scheme_for_girl_students_technical_diploma:documents_required:0",
+        "pragati_scholarship_scheme_for_girl_students_technical_diploma:benefits:0",
+        "pragati_scholarship_scheme_for_girl_students_technical_diploma:exclusions:0",
+        "pragati_scholarship_scheme_for_girl_students_technical_diploma:application:0",
+        "pragati_scholarship_scheme_for_girl_students_technical_diploma:eligibility:0",
+        "pragati_scholarship_scheme_for_girl_students_technical_diploma:target_groups:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 14.062800000829156,
+        "vector_retrieval": 0.5685999931301922,
+        "retrieval_total": 16.47930000035558
+      }
     },
     {
       "id": "q19",
-      "question": "How much does Pragati technical degree provide?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 1.0,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "pragati_scholarship_scheme_for_girl_students_technical_degree:benefits:0",
+        "pragati_scholarship_scheme_for_girl_students_technical_degree:exclusions:0",
+        "pragati_scholarship_scheme_for_girl_students_technical_degree:documents_required:0",
+        "pragati_scholarship_scheme_for_girl_students_technical_degree:application:0",
+        "pragati_scholarship_scheme_for_girl_students_technical_degree:eligibility:0",
+        "pragati_scholarship_scheme_for_girl_students_technical_degree:target_groups:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 14.45170000079088,
+        "vector_retrieval": 0.46520000614691526,
+        "retrieval_total": 16.845499994815327
+      }
     },
     {
       "id": "q20",
-      "question": "How do I apply for Pragati technical diploma?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 1.0,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "pragati_scholarship_scheme_for_girl_students_technical_diploma:documents_required:0",
+        "pragati_scholarship_scheme_for_girl_students_technical_diploma:application:0",
+        "pragati_scholarship_scheme_for_girl_students_technical_diploma:benefits:0",
+        "pragati_scholarship_scheme_for_girl_students_technical_diploma:eligibility:0",
+        "pragati_scholarship_scheme_for_girl_students_technical_diploma:exclusions:0",
+        "pragati_scholarship_scheme_for_girl_students_technical_diploma:target_groups:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 15.441899995494168,
+        "vector_retrieval": 0.48750000132713467,
+        "retrieval_total": 18.112899997504428
+      }
     },
     {
       "id": "q21",
-      "question": "What is the income limit for pre matric students with disabilities?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 0.5,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": [
-        "SOURCE_CONTRADICTION"
-      ]
+      "passed": true,
+      "chunk_ids": [
+        "pre_matric_scholarship_for_students_with_disabilities:eligibility:1",
+        "pre_matric_scholarship_for_students_with_disabilities:benefits:0",
+        "pre_matric_scholarship_for_students_with_disabilities:important_notes:0",
+        "pre_matric_scholarship_for_students_with_disabilities:target_groups:0",
+        "pre_matric_scholarship_for_students_with_disabilities:eligibility:0",
+        "pre_matric_scholarship_for_students_with_disabilities:objective:0",
+        "pre_matric_scholarship_for_students_with_disabilities:tags:0",
+        "pre_matric_scholarship_for_students_with_disabilities:exclusions:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 18.274400004884228,
+        "vector_retrieval": 0.3077000001212582,
+        "retrieval_total": 20.919599999615457
+      }
     },
     {
       "id": "q22",
-      "question": "What documents are needed for pre matric students with disabilities?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 1.0,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": [
-        "SOURCE_CONTRADICTION"
-      ]
+      "passed": true,
+      "chunk_ids": [
+        "pre_matric_scholarship_for_students_with_disabilities:documents_required:0",
+        "pre_matric_scholarship_for_students_with_disabilities:tags:0",
+        "pre_matric_scholarship_for_students_with_disabilities:eligibility:1",
+        "pre_matric_scholarship_for_students_with_disabilities:objective:0",
+        "pre_matric_scholarship_for_students_with_disabilities:target_groups:0",
+        "pre_matric_scholarship_for_students_with_disabilities:application:0",
+        "pre_matric_scholarship_for_students_with_disabilities:important_notes:0",
+        "pre_matric_scholarship_for_students_with_disabilities:benefits:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 17.677000003459398,
+        "vector_retrieval": 0.6269999939831905,
+        "retrieval_total": 20.615100002032705
+      }
     },
     {
       "id": "q23",
-      "question": "How much does post matric students with disabilities provide?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 0.4,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": [
-        "SOURCE_CONTRADICTION",
-        "SOURCE_CONTRADICTION"
-      ]
+      "passed": true,
+      "chunk_ids": [
+        "post_matric_scholarship_students_with_disabilities:benefits:1",
+        "pre_matric_scholarship_for_students_with_disabilities:eligibility:1",
+        "post_matric_scholarship_students_with_disabilities:target_groups:0",
+        "pre_matric_scholarship_for_students_with_disabilities:important_notes:0",
+        "post_matric_scholarship_students_with_disabilities:objective:0",
+        "pre_matric_scholarship_for_students_with_disabilities:target_groups:0",
+        "post_matric_scholarship_students_with_disabilities:eligibility:0",
+        "pre_matric_scholarship_for_students_with_disabilities:benefits:0",
+        "post_matric_scholarship_students_with_disabilities:important_notes:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 17.223999995621853,
+        "vector_retrieval": 0.6597000028705224,
+        "retrieval_total": 20.240899997588713
+      }
     },
     {
       "id": "q24",
-      "question": "What is the income limit for Scheduled Tribe pre matric scholarship?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 0.3333333333333333,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": [
-        "SOURCE_CONTRADICTION"
-      ]
+      "passed": true,
+      "chunk_ids": [
+        "pre_matric_scholarship_for_scheduled_tribe_students:important_notes:0",
+        "pre_matric_scholarship_for_scheduled_tribe_students:eligibility:0",
+        "pre_matric_scholarship_for_scheduled_tribe_students:exclusions:0",
+        "pre_matric_scholarship_for_scheduled_tribe_students:documents_required:0",
+        "pre_matric_scholarship_for_scheduled_tribe_students:target_groups:0",
+        "pre_matric_scholarship_for_scheduled_tribe_students:objective:0",
+        "pre_matric_scholarship_for_scheduled_tribe_students:tags:0",
+        "pre_matric_scholarship_for_scheduled_tribe_students:benefits:1"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 20.576900002197362,
+        "vector_retrieval": 0.7143999901018105,
+        "retrieval_total": 24.110700003802776
+      }
     },
     {
       "id": "q25",
-      "question": "What is the income limit for Ph D SEBC students in Gujarat?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 1.0,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "scholarship_for_ph_d_students_of_socially_and_educationally_backward_classes:eligibility:0",
+        "scholarship_for_ph_d_students_of_socially_and_educationally_backward_classes:application:0",
+        "scholarship_for_ph_d_students_of_socially_and_educationally_backward_classes:objective:0",
+        "scholarship_for_ph_d_students_of_socially_and_educationally_backward_classes:benefits:0",
+        "scholarship_for_ph_d_students_of_socially_and_educationally_backward_classes:documents_required:0",
+        "scholarship_for_ph_d_students_of_socially_and_educationally_backward_classes:target_groups:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 22.18939999875147,
+        "vector_retrieval": 0.5791000003227964,
+        "retrieval_total": 27.59840000362601
+      }
     },
     {
       "id": "q26",
-      "question": "How do I apply for Ph D SEBC scholarship?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 1.0,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "scholarship_for_ph_d_students_of_socially_and_educationally_backward_classes:objective:0",
+        "scholarship_for_ph_d_students_of_socially_and_educationally_backward_classes:documents_required:0",
+        "scholarship_for_ph_d_students_of_socially_and_educationally_backward_classes:eligibility:0",
+        "scholarship_for_ph_d_students_of_socially_and_educationally_backward_classes:target_groups:0",
+        "scholarship_for_ph_d_students_of_socially_and_educationally_backward_classes:application:0",
+        "scholarship_for_ph_d_students_of_socially_and_educationally_backward_classes:benefits:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 16.457700003229547,
+        "vector_retrieval": 0.4797000074177049,
+        "retrieval_total": 21.149899999727495
+      }
     },
     {
       "id": "q27",
-      "question": "What documents are required for ICAR?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 1.0,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "icar_post_matric_scholarship_for_scheduled_caste_scheduled_tribes_candidates:documents_required:0",
+        "icar_post_matric_scholarship_for_scheduled_caste_scheduled_tribes_candidates:important_notes:0",
+        "icar_post_matric_scholarship_for_scheduled_caste_scheduled_tribes_candidates:application:0",
+        "icar_post_matric_scholarship_for_scheduled_caste_scheduled_tribes_candidates:benefits:0",
+        "icar_post_matric_scholarship_for_scheduled_caste_scheduled_tribes_candidates:objective:0",
+        "icar_post_matric_scholarship_for_scheduled_caste_scheduled_tribes_candidates:eligibility:0",
+        "icar_post_matric_scholarship_for_scheduled_caste_scheduled_tribes_candidates:tags:0",
+        "icar_post_matric_scholarship_for_scheduled_caste_scheduled_tribes_candidates:target_groups:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 16.960600005404558,
+        "vector_retrieval": 0.7399999958579428,
+        "retrieval_total": 19.73580000048969
+      }
     },
     {
       "id": "q28",
-      "question": "How much does ICAR provide?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 0.5,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "icar_post_matric_scholarship_for_scheduled_caste_scheduled_tribes_candidates:benefits:0",
+        "icar_post_matric_scholarship_for_scheduled_caste_scheduled_tribes_candidates:application:0",
+        "icar_post_matric_scholarship_for_scheduled_caste_scheduled_tribes_candidates:important_notes:0",
+        "icar_post_matric_scholarship_for_scheduled_caste_scheduled_tribes_candidates:objective:0",
+        "icar_post_matric_scholarship_for_scheduled_caste_scheduled_tribes_candidates:documents_required:0",
+        "icar_post_matric_scholarship_for_scheduled_caste_scheduled_tribes_candidates:selection:0",
+        "icar_post_matric_scholarship_for_scheduled_caste_scheduled_tribes_candidates:target_groups:0",
+        "icar_post_matric_scholarship_for_scheduled_caste_scheduled_tribes_candidates:tags:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 11.80939999903785,
+        "vector_retrieval": 0.28610000299522653,
+        "retrieval_total": 13.733899999351706
+      }
     },
     {
       "id": "q29",
-      "question": "What is the income limit for national means cum merit scholarship?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 0.3333333333333333,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "national_means_cum_merit_scholarship_scheme:benefits:0",
+        "national_means_cum_merit_scholarship_scheme:important_notes:0",
+        "national_means_cum_merit_scholarship_scheme:eligibility:0",
+        "national_means_cum_merit_scholarship_scheme:objective:0",
+        "national_means_cum_merit_scholarship_scheme:tags:0",
+        "national_means_cum_merit_scholarship_scheme:target_groups:0",
+        "national_means_cum_merit_scholarship_scheme:documents_required:0",
+        "national_means_cum_merit_scholarship_scheme:exclusions:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 11.814600002253428,
+        "vector_retrieval": 0.3116999941994436,
+        "retrieval_total": 13.671700005943421
+      }
     },
     {
       "id": "q30",
-      "question": "What documents are needed for university rank holders?",
       "retrieval_hit": true,
-      "answer_relevant": true,
-      "context_relevance": 1.0,
-      "grounding": 1.0,
-      "citation_correct": true,
-      "agent_failed": false,
-      "mode": "DETERMINISTIC_FALLBACK",
-      "warnings": []
+      "passed": true,
+      "chunk_ids": [
+        "post_graduate_merit_scholarship_scheme_for_university_rank_holders_at_under_graduate_level:eligibility:0",
+        "post_graduate_merit_scholarship_scheme_for_university_rank_holders_at_under_graduate_level:documents_required:0",
+        "post_graduate_merit_scholarship_scheme_for_university_rank_holders_at_under_graduate_level:objective:0",
+        "post_graduate_merit_scholarship_scheme_for_university_rank_holders_at_under_graduate_level:tags:0",
+        "post_graduate_merit_scholarship_scheme_for_university_rank_holders_at_under_graduate_level:application:0",
+        "post_graduate_merit_scholarship_scheme_for_university_rank_holders_at_under_graduate_level:benefits:0",
+        "post_graduate_merit_scholarship_scheme_for_university_rank_holders_at_under_graduate_level:exclusions:0"
+      ],
+      "warnings": [],
+      "timings_ms": {
+        "embedding": 12.40959999995539,
+        "vector_retrieval": 0.26050000451505184,
+        "retrieval_total": 14.186799999151845
+      }
     }
-  ]
+  ],
+  "limitations": "Retrieval-only measurements; no generation, answer accuracy or eligibility-decision score is claimed.",
+  "passed": 30,
+  "total": 30,
+  "latency_ms": {
+    "p50": 18.375,
+    "p95": 27.767,
+    "p99": 8585.52
+  },
+  "elapsed_seconds": 12.755
 }

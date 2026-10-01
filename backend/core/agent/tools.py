@@ -1,4 +1,4 @@
-"""Two real, validated, bounded tools with persisted invocation records."""
+"""Validated semantic retrieval with bounded workers and invocation records."""
 
 import os
 import threading
@@ -11,11 +11,9 @@ from typing import Callable
 from apps.navigator.models import ToolExecution
 from pydantic import ValidationError
 
-from core import corpus
-from core.eligibility import check_eligibility
 from core.observability import event
 from core.rag.retrieval import retrieve
-from core.schemas import EligibilityRequest, SearchRequest
+from core.schemas import SearchRequest
 
 _POOL = ThreadPoolExecutor(max_workers=4, thread_name_prefix="scholarship-tool")
 _CAPACITY = threading.BoundedSemaphore(4)
@@ -28,15 +26,10 @@ class Tool:
     function: Callable
 
 
-def _eligibility(payload):
-    return check_eligibility(payload.profile, corpus.records(payload.scheme_ids))
-
-
 def _retrieval(payload):
     return retrieve(**payload.model_dump())
 
 
-ELIGIBILITY_TOOL = Tool("eligibility_engine", EligibilityRequest, _eligibility)
 RETRIEVAL_TOOL = Tool("scholarship_retrieval", SearchRequest, _retrieval)
 
 

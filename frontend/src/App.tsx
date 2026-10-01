@@ -1,38 +1,31 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
 import Assistant from "./Assistant";
-import ProfileForm from "./ProfileForm";
 import Workspace from "./Workspace";
 import Dashboard from "./Dashboard";
 import ScholarshipDetail from "./ScholarshipDetail";
 import ScholarshipList from "./ScholarshipList";
-import { navigate } from "./navigation";
-import type { Citation, Profile, Result, Scheme } from "./types";
+import type { Citation, Scheme } from "./types";
 
 export default function App() {
   const [route, setRoute] = useState(window.location.hash.slice(1) || "/");
-  const [profile, setProfile] = useState<Profile>(() => {
-    try {
-      return JSON.parse(sessionStorage.getItem("scholar-profile") || "{}");
-    } catch {
-      return {};
-    }
-  });
   const [schemes, setSchemes] = useState<Scheme[]>([]);
-  const [results, setResults] = useState<Result[]>([]);
   const [detail, setDetail] = useState<{
     scholarship: Scheme;
     citation: Citation;
   } | null>(null);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("ALL");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
+    sessionStorage.removeItem("scholar-profile");
     const onHash = () => setRoute(window.location.hash.slice(1) || "/");
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
+  useEffect(() => {
+    if (route === "/profile") window.location.hash = "/assistant";
+  }, [route]);
   useEffect(() => {
     let active = true;
     api<{ results: Scheme[] }>("/scholarships/search", { top_k: 16 })
@@ -73,16 +66,6 @@ export default function App() {
       active = false;
     };
   }, [schemeId]);
-  async function match(values: Profile) {
-    const data = await api<{ results: Result[] }>("/eligibility/check", {
-      profile: values,
-    });
-    setProfile(values);
-    sessionStorage.setItem("scholar-profile", JSON.stringify(values));
-    setResults(data.results);
-    setFilter("ALL");
-    navigate("/scholarships");
-  }
   async function discover(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true);
@@ -99,22 +82,12 @@ export default function App() {
       setBusy(false);
     }
   }
-  const missing = [
-    ...new Set(
-      results
-        .filter((r) => r.status !== "NOT_ELIGIBLE")
-        .flatMap((r) => r.missing_information),
-    ),
-  ];
-  const selectedResult = results.find((r) => r.scheme_id === schemeId);
   const title =
-    route === "/profile"
-      ? "Your student profile"
-      : route === "/assistant"
-        ? "Let’s find some clarity"
-        : route.startsWith("/scholarships")
-          ? "Explore your opportunities"
-          : "Your next chapter starts here";
+    route === "/assistant"
+      ? "Let’s find some clarity"
+      : route.startsWith("/scholarships")
+        ? "Explore your opportunities"
+        : "Your next chapter starts here";
   return (
     <Workspace route={route} title={title}>
       {error && (
@@ -128,37 +101,19 @@ export default function App() {
           Loading scholarship information…
         </p>
       )}
-
-      {route === "/" && <Dashboard schemes={schemes} results={results} />}
-      {route === "/profile" && (
-        <ProfileForm
-          key={JSON.stringify(profile)}
-          profile={profile}
-          missing={missing}
-          onMatch={match}
-        />
-      )}
-      {route === "/assistant" && <Assistant profile={profile} />}
+      {route === "/" && <Dashboard schemes={schemes} />}
+      {route === "/assistant" && <Assistant />}
       {schemeId && detail && (
-        <ScholarshipDetail
-          detail={detail}
-          profile={profile}
-          schemeId={schemeId}
-          result={selectedResult}
-        />
+        <ScholarshipDetail detail={detail} schemeId={schemeId} />
       )}
       {(route === "/" || route === "/scholarships") && (
         <ScholarshipList
           route={route}
           schemes={schemes}
-          results={results}
           search={search}
           setSearch={setSearch}
-          filter={filter}
-          setFilter={setFilter}
           busy={busy}
           error={error}
-          missing={missing}
           discover={discover}
         />
       )}

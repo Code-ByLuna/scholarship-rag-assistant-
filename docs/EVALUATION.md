@@ -1,27 +1,33 @@
-# Evaluation and latency
+# Evaluation
 
-Run python evaluation/run_eval.py after migrations and ingestion. It writes the
-actual JSON report to evaluation/reports/latest.json and an EvaluationRun record.
-Fixtures are committed separately: 33 corpus-based profiles plus one fully resolved
-toy rule contract and 30 natural-language questions with manually specified expected
-scheme prefixes and sections. The toy contract is explicitly not corpus knowledge.
+`python evaluation/run_eval.py` evaluates 30 manually annotated retrieval questions
+against the actual persisted FAISS index and sentence-transformer model. The report
+in `evaluation/reports/latest.json` measures scheme/section hits and retrieval timing.
+It does not call a language model or claim answer correctness from retrieved quotes.
 
-Custom deterministic evaluation is used instead of RAGAS: retrieval scheme hit rate,
-section answer relevance, context relevance, exact quote grounding, citation integrity,
-eligibility accuracy, unsupported excerpt rate, failure rate. The overall score is
-the unweighted mean of eligibility, retrieval hit, answer relevance, grounding,
-citations, context relevance and nonfailure; target 0.80. All scores are reported.
+`python evaluation/run_eval.py --live --delay 20` runs 16 acceptance cases against
+configured Gemini, including the requested 10 examples, a second contradiction case,
+and postgraduate/SC-ST/PhD/monthly/disability discovery. Conversation setup turns
+precede follow-up, deadline and unsupported-amount questions. The live report records
+actual generated answers, statuses, sources/excerpts, checks and measured latency.
+Use `--only CASE_ID` for a focused rerun and `--output` for a separate report.
 
-Exact quote grounding is a narrow hallucination proxy, not a guarantee of answer
-completeness or semantic relevance. Profile expected states are based on the supplied
-corpus. Real records have residual verification requirements; the suite never labels
-those definitely eligible merely to improve scores.
+Checks include requested status, expected fact patterns, relevant source prefixes,
+multiple sources for discovery, exact excerpt provenance, absence of off-topic
+citations, and successful conversation setup. The checks use test facts, not a
+production question-answer lookup. Model grounding review adds semantic scrutiny but
+neither it nor the spot-check patterns prove all factual paraphrases correct.
 
-Cold model startup is recorded separately. Warm embedding, vector, retrieval-total,
-and complete-request P50/P95/P99 are measured from actual questions. LLM latency is
-null without a live provider. The local retrieval target of 200ms is architectural,
-not an unmeasured SLA. CI tests use explicit corpus fallback for isolation; the
-evaluation command uses the persisted real sentence-transformer/FAISS index.
+Rate limits can fail acceptance cases even when the implementation is correct;
+those failures remain visible in reports. Pace calls rather than conceal them with
+fallback excerpts. Live runs consume provider tokens. Test sessions are deleted
+at the end of each case, while content-free execution/usage audit rows remain.
 
-Run python -m pytest for unit, API/database, vector persistence, tools, malformed LLM,
-fallback, session continuation, and adversarial tests. Frontend: npm test; npm run build.
+Backend pytest uses mocked providers/embeddings where needed. It verifies the actual
+generated answer reaches the API, evidence checks, malformed outputs, grounding
+rejection/repair, input rejection, tool bounds, model errors, conversation history,
+source contradictions, index integrity, and removal of profile routes. Frontend tests
+verify natural-text rendering, source names, absent profiles and clear provider errors.
+Browser tests on isolated ports mock provider responses; real provider acceptance
+is measured separately. The previous profile evaluation and 96.7% combined legacy
+score are obsolete and are not claimed for the conversational application.

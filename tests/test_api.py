@@ -10,29 +10,14 @@ def client():
     return APIClient()
 
 
-def test_profile_initial_fields_only(client):
-    p = {
-        "state": "Kerala",
-        "category": "OBC",
-        "annual_family_income": 250000,
-        "course_level": "undergraduate",
-        "year_of_study": 3,
-        "study_mode": "regular",
-    }
-    r = client.post("/api/profile/validate", p, format="json")
-    assert r.status_code == 200
-    assert r.json()["profile"]["gender"] is None
-    assert client.post("/api/profile/validate", {}, format="json").status_code == 400
-
-
-def test_eligibility_search_detail(client):
-    result = client.post("/api/eligibility/check", {"profile": {}}, format="json")
-    assert result.status_code == 200
-    assert len(result.json()["results"]) == 16
+def test_removed_profile_routes_and_preserved_scholarship_data(client):
+    assert client.post("/api/profile/validate", {}, format="json").status_code == 404
+    assert client.post("/api/eligibility/check", {"profile": {}}, format="json").status_code == 404
     search = client.post("/api/scholarships/search", {"category": "OBC"}, format="json")
     assert any("yasasvi" in s["scheme_id"] for s in search.json()["results"])
     sid = records()[0]["scheme_id"]
-    assert client.get("/api/scholarships/" + sid).status_code == 200
+    detail = client.get("/api/scholarships/" + sid)
+    assert detail.status_code == 200 and detail.json()["scholarship"]["eligibility"]
     assert client.get("/api/scholarships/unknown").status_code == 404
 
 
@@ -52,8 +37,8 @@ def test_admin_endpoints_protected(client):
 
 def test_request_id_and_invalid_input(client):
     response = client.post(
-        "/api/eligibility/check",
-        {"profile": {"age": "unknown"}},
+        "/api/agent/query",
+        {"question": "Pragati", "profile": {"age": 20}},
         format="json",
         HTTP_X_REQUEST_ID="test-request",
     )
@@ -76,3 +61,8 @@ def test_health_exposes_real_index_status(client):
     assert response.status_code == 200
     assert response.json()["dataset"]["records"] == 16
     assert isinstance(response.json()["vector_index"]["ready"], bool)
+
+
+def test_json_declares_utf8_for_windows_clients(client):
+    response = client.get("/api/health")
+    assert "charset=utf-8" in response["Content-Type"]

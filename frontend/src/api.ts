@@ -4,12 +4,13 @@ export async function api<T>(
   path: string,
   body?: unknown,
   token?: string,
+  method?: "DELETE",
 ): Promise<T> {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 120000);
   try {
     const response = await fetch(BASE + "/api" + path, {
-      method: body === undefined ? "GET" : "POST",
+      method: method || (body === undefined ? "GET" : "POST"),
       headers: {
         "Content-Type": "application/json",
         ...(token ? { "X-Session-Token": token } : {}),
@@ -17,14 +18,11 @@ export async function api<T>(
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: controller.signal,
     });
+    if (response.status === 204) return undefined as T;
     const data = await response.json();
     if (!response.ok) {
       throw new Error(
-        data.error?.message ||
-          (data.missing_required_fields
-            ? "Complete these fields: " +
-              data.missing_required_fields.join(", ")
-            : "The request could not be completed."),
+        data.error?.message || "The request could not be completed.",
       );
     }
     return data as T;

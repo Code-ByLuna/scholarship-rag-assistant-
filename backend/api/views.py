@@ -1,46 +1,12 @@
 """Small REST handlers; business logic remains in application services."""
 
 from core import corpus, memory
-from core.eligibility import check_eligibility
-from core.observability import event
-from core.schemas import INITIAL_FIELDS, EligibilityRequest, SearchRequest, StudentProfile
+from core.schemas import SearchRequest
 from django.db import connection
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 
 from api.common import endpoint
-
-
-@endpoint("POST", StudentProfile)
-def profile_validate(request, payload):
-    missing = [f for f in INITIAL_FIELDS if getattr(payload, f) is None]
-    return Response(
-        {"profile": payload.model_dump(), "valid": not missing, "missing_required_fields": missing},
-        status=200 if not missing else 400,
-    )
-
-
-@endpoint("POST", EligibilityRequest)
-def eligibility_check(request, payload):
-    results = check_eligibility(payload.profile, corpus.records(payload.scheme_ids))
-    event(
-        "eligibility_check",
-        result_counts={
-            s: sum(r.status == s for r in results)
-            for s in ("ELIGIBLE", "NOT_ELIGIBLE", "NEEDS_VERIFICATION")
-        },
-    )
-    return Response(
-        {
-            "results": [r.model_dump() for r in results],
-            "citations": [
-                corpus.citation(
-                    corpus.detail(r.scheme_id), r.scheme_id + ":eligibility"
-                ).model_dump()
-                for r in results
-            ],
-        }
-    )
 
 
 @endpoint("POST", SearchRequest)
@@ -103,13 +69,21 @@ def health(request, payload):
     from core.rag.retrieval import index_status
 
     index = index_status()
+    from core.llm import configured_providers
+
+    try:
+        providers = configured_providers()
+        llm_ready = bool(providers and providers[0].api_key)
+    except ValueError:
+        llm_ready = False
     return Response(
         {
             "status": "ok",
             "database": connection.vendor,
             "dataset": {"records": len(corpus.records()), "sha256": corpus.fingerprint()},
             "vector_index": index,
-            "assistant": "configured" if index["ready"] else "degraded",
+            "assistant": "configured" if index["ready"] and llm_ready else "unavailable",
+            "llm_configured": llm_ready,
         }
     )
 

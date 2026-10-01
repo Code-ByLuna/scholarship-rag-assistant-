@@ -1,4 +1,4 @@
-"""Semantic retrieval with scheme metadata filters and explicit lexical fallback."""
+"""Semantic retrieval, diverse results, and evidence for source contradictions."""
 
 import os
 import re
@@ -7,7 +7,6 @@ from functools import lru_cache
 from pathlib import Path
 
 from core import corpus
-from core.rag.documents import prepare_documents
 from core.rag.embeddings import embed_query, model_name
 from core.rag.vector_store import FAISSVectorStore
 
@@ -79,9 +78,21 @@ def filters_for(question, scheme_ids=None, category=None):
     if category:
         return {"scheme_id": [s["scheme_id"] for s in corpus.search(category=category, top_k=16)]}
     # Explicit category tokens are a corpus filter, never inferred profile facts.
-    for code in ("OBC", "EBC", "DNT", "SC", "ST", "SEBC"):
-        if re.search(r"\b" + code + r"\b", question, re.I):
-            return {"scheme_id": [s["scheme_id"] for s in corpus.search(category=code, top_k=16)]}
+    categories = [
+        code
+        for code in ("OBC", "EBC", "DNT", "SC", "ST", "SEBC")
+        if re.search(r"\b" + code + r"\b", question, re.I)
+    ]
+    if categories:
+        return {
+            "scheme_id": list(
+                dict.fromkeys(
+                    s["scheme_id"]
+                    for code in categories
+                    for s in corpus.search(category=code, top_k=16)
+                )
+            )
+        }
     query_terms = set(re.findall(r"[a-z]+", question.lower())) - COMMON
     scored = [
         (len(query_terms & (set(re.findall(r"[a-z]+", s["name"].lower())) - COMMON)), s)
@@ -95,52 +106,30 @@ def filters_for(question, scheme_ids=None, category=None):
     return {}
 
 
-def section_filter(question):
-    lower = question.lower()
-    if "document" in lower:
-        return ["documents_required"]
-    if (
-        any(t in lower for t in ("how do", "how to", "procedure", "apply", "application"))
-        and "can " not in lower
-    ):
-        return ["application", "important_notes"]
-    if any(t in lower for t in ("how much", "benefit", "amount", "provide")):
-        return ["benefits", "important_notes"]
-    if any(
-        t in lower
-        for t in (
-            "age",
-            "limit",
-            "income",
-            "require",
-            "qualify",
-            "eligible",
-            "eligibility",
-            "gate",
-            "ceed",
-            "year",
-        )
-    ):
-        return ["eligibility", "exclusions", "important_notes"]
-    return None
+def select_diverse(hits, top_k, scoped):
+    """Keep nearest evidence; broad discovery gives distinct schemes a first turn."""
+    if scoped:
+        return [chunk for chunk, _ in hits[:top_k]]
+    groups = {}
+    for chunk, score in hits:
+        groups.setdefault(chunk.scheme_id, []).append((chunk, score))
+    selected = []
+    while groups and len(selected) < top_k:
+        for sid in list(groups):
+            selected.append(groups[sid].pop(0)[0])
+            if not groups[sid]:
+                del groups[sid]
+            if len(selected) == top_k:
+                break
+    return selected
 
 
-def lexical_fallback(question, filters, top_k):
-    terms = set(re.findall(r"[a-z0-9]+", question.lower())) - COMMON
-    chunks = [c for c in prepare_documents() if all(getattr(c, k) in v for k, v in filters.items())]
-    scored = [(sum(t in (c.scheme_name + " " + c.text).lower() for t in terms), c) for c in chunks]
-    return [c for score, c in sorted(scored, key=lambda p: p[0], reverse=True)[:top_k] if score > 0]
-
-
-def retrieve(question: str, scheme_ids=None, category=None, top_k=5) -> dict:
+def retrieve(question: str, scheme_ids=None, category=None, top_k=8) -> dict:
     started = time.perf_counter()
     filters = filters_for(question, scheme_ids, category)
-    sections = section_filter(question)
-    if sections:
-        filters["section"] = sections
-    embed_ms = 0.0
-    vector_ms = 0.0
+    embed_ms = vector_ms = 0.0
     warnings = []
+    chunks = []
     state = index_status()
     try:
         if not state["ready"]:
@@ -150,20 +139,33 @@ def retrieve(question: str, scheme_ids=None, category=None, top_k=5) -> dict:
         vector = embed_query(question)
         embed_ms = (time.perf_counter() - t) * 1000
         t = time.perf_counter()
-        hits = store.search(vector, top_k, filters)
+        hits = store.search(vector, min(64, top_k * 4), filters)
         vector_ms = (time.perf_counter() - t) * 1000
-        chunks = [chunk for chunk, score in hits if score >= 0.12]
+        hits = [(chunk, score) for chunk, score in hits if score >= 0.20]
+        chunks = select_diverse(hits, top_k, len(filters.get("scheme_id", [])) == 1)
+        # Fetch source notes for retrieved schemes through the same vector store.
+        # This keeps conflicts visible even when their notes rank below benefits.
+        ids = list(dict.fromkeys(c.scheme_id for c in chunks))
+        if ids:
+            t = time.perf_counter()
+            notes = store.search(vector, 32, {"scheme_id": ids, "section": ["important_notes"]})
+            vector_ms += (time.perf_counter() - t) * 1000
+            existing = {c.chunk_id for c in chunks}
+            for chunk, _ in notes:
+                if chunk.chunk_id not in existing:
+                    chunks.append(chunk)
+                    existing.add(chunk.chunk_id)
     except Exception as exc:
         from core.observability import event
 
         event("vector_retrieval_failure", error_type=type(exc).__name__)
+        chunks = []
         warnings.append(
             {
                 "code": "VECTOR_UNAVAILABLE",
-                "message": "Semantic retrieval unavailable; corpus text search used.",
+                "message": "Scholarship search is unavailable. Rebuild the scholarship index and try again.",
             }
         )
-        chunks = lexical_fallback(question, filters, top_k)
     return {
         "chunks": chunks,
         "warnings": warnings,

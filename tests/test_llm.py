@@ -15,8 +15,12 @@ pytestmark = pytest.mark.django_db
 
 
 def test_gemini_sends_json_schema_and_preserves_strict_local_validation(monkeypatch):
-    chunk = SimpleNamespace(chunk_id="probe:documents", text="Required: Aadhaar Card.")
-    draft = {"fragments": [{"chunk_id": chunk.chunk_id, "quote": chunk.text}]}
+    chunk = SimpleNamespace(chunk_id="probe:documents", text="Required: Aadhaar Card.", citation={})
+    draft = {
+        "answer": "You need an Aadhaar Card.",
+        "status": "success",
+        "supports": [{"chunk_id": chunk.chunk_id, "quote": chunk.text}],
+    }
     requests = []
 
     def handle(request):
@@ -50,12 +54,12 @@ def test_gemini_sends_json_schema_and_preserves_strict_local_validation(monkeypa
     monkeypatch.setattr(genai, "Client", client_with_transport)
     result = GeminiProvider("gemini-test", "dummy-test-key").generate({"question": "Documents?"})
     assert len(requests) == 1
-    assert validate_draft(result.text, [chunk]).fragments[0].quote == chunk.text
+    assert validate_draft(result.text, [chunk]).supports[0].quote == chunk.text
     assert (result.input_tokens, result.output_tokens) == (10, 8)
     with pytest.raises(ValidationError):
         validate_draft(json.dumps(dict(draft, invented_status="ELIGIBLE")), [chunk])
     with pytest.raises(ValidationError):
-        invalid = {"fragments": [dict(draft["fragments"][0], extra="unsupported")]}
+        invalid = dict(draft, supports=[dict(draft["supports"][0], extra="unsupported")])
         validate_draft(json.dumps(invalid), [chunk])
 
 

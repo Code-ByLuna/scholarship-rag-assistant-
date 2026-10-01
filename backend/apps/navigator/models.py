@@ -26,14 +26,6 @@ class UserSession(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 
-class StudentProfile(models.Model):
-    session = models.OneToOneField(
-        UserSession, on_delete=models.CASCADE, related_name="student_profile"
-    )
-    values = models.JSONField(default=dict)
-    updated_at = models.DateTimeField(auto_now=True)
-
-
 class ConversationMessage(models.Model):
     session = models.ForeignKey(UserSession, on_delete=models.CASCADE, related_name="messages")
     role = models.CharField(max_length=12)
@@ -67,6 +59,7 @@ class LLMUsageLog(models.Model):
     )
     provider = models.CharField(max_length=40)
     model = models.CharField(max_length=150)
+    phase = models.CharField(max_length=20, default="generation")
     input_tokens = models.PositiveIntegerField(null=True)
     output_tokens = models.PositiveIntegerField(null=True)
     total_tokens = models.PositiveIntegerField(null=True)

@@ -1,147 +1,120 @@
-# Scholarship Eligibility Navigator
+# Scholarship Navigator
 
-A scholarship discovery and matching application for students. Enter a profile,
-understand every eligibility result, inspect benefits/documents/application steps,
-and ask questions with persistent conversation memory and source citations.
+A conversational scholarship assistant powered by retrieval augmented generation.
+Ask a question immediately, browse the 16 supplied scholarship records, and read
+Gemini-generated explanations with supporting sources. No student profile or
+rule-based eligibility matching is required. Eligibility criteria remain in the
+unaltered scholarship dataset and are retrieved and explained like other facts.
 
-Facts come from the supplied dataset. Decisions come from a deterministic rule
-engine. A single LangGraph agent calls retrieval and eligibility tools. The optional
-Gemini provider selects verified source excerpts; Pydantic and exact quote checks
-prevent unsupported AI facts from reaching the React frontend.
+The assistant uses sentence-transformer embeddings and the persisted FAISS index,
+then sends relevant scholarship evidence and conversation history to Gemini.
+The generated answer is returned directly to React after evidence and grounding
+checks. Retrieval/provider failures are explicit errors, never fabricated AI answers.
 
-The repository originally contained only six supplied data/reference files and an
-initial Git commit. Those files are preserved. The application, schemas, migrations,
-API, React UI, retrieval/agent services, tests and deployment documentation are new.
-See [audit](docs/AUDIT.md) for the inspected starting state and milestone plan.
+## Run this Windows workspace
 
-## Run locally
+From `D:\social-hackthon\social-hackthon`, configure the ignored `.env`:
 
-Python 3.10+, Node 24 LTS. From the repository root:
+```dotenv
+DB_ENGINE=sqlite
+LLM_PROVIDER=gemini
+LLM_MODEL=gemini-3.5-flash-lite
+GEMINI_API_KEY=your_private_key
+```
+
+Your existing working key and SQLite configuration can be retained. Never put
+credentials in `.env.example`, frontend code, or chat. Other configuration defaults
+are documented in [.env.example](.env.example).
+
+Backend terminal:
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.lock
-Copy-Item .env.example .env
-New-Item -ItemType Directory -Force var
+cd D:\social-hackthon\social-hackthon
 python backend/manage.py migrate
-python backend/manage.py seed_scholarships
-python backend/manage.py ingest_scholarships
 python backend/manage.py runserver 127.0.0.1:8000
 ```
 
-In a second terminal:
+Frontend terminal:
 
 ```powershell
-cd frontend
-npm ci
-npm run dev
-```
-
-Open http://127.0.0.1:5173. API documentation: http://127.0.0.1:8000/api/docs.
-For this Windows workspace, a portable runtime was installed into ignored var/tools.
-If Node is not on PATH, use the actual printed path from python scripts/install_node.py:
-
-```powershell
+cd D:\social-hackthon\social-hackthon
 $env:PATH = "$PWD\var\tools\node-v24.21.0-win-x64;" + $env:PATH
 npm.cmd --prefix frontend run dev
 ```
 
-The initial npm registry was unreachable here; installation used the HTTPS npmmirror
-registry with package integrity hashes. The committed lockfile records that registry.
-A normal npm ci follows those locked URLs. Use your approved registry policy for
-deployment and regenerate the lockfile deliberately if required.
+Open http://127.0.0.1:5173/#/assistant. API docs: http://127.0.0.1:8000/api/docs.
+The migration removes saved personal profiles and strips old rule traces from
+historical assistant messages. Conversation questions and sourced answer text remain.
 
-Defaults: DJANGO_DEBUG=true, DB_ENGINE=sqlite, LLM_PROVIDER=none. No provider key is
-needed for deterministic matching and source-excerpt assistance. Private .env is
-ignored. Set DB_ENGINE=mysql and MYSQL_* values to use MySQL. A configured local
-MySQL service was detected, but the user selected SQLite validation for this run.
-
-Important configuration:
-- EMBEDDING_MODEL: sentence-transformers/all-MiniLM-L6-v2 (compact CPU English embeddings).
-- VECTOR_INDEX_DIR: persisted var/index; explicitly re-ingest on corpus/model changes.
-- LLM_PROVIDER / LLM_MODEL / GEMINI_API_KEY: optional Gemini provider.
-- LLM_FALLBACK_PROVIDER / MODEL / API_KEY: optional secondary Gemini model/key.
-- TOOL_TIMEOUT_SECONDS / LLM_TIMEOUT_SECONDS / AGENT_MAX_ITERATIONS: bounded failures.
-- LLM_MAX_OUTPUT_TOKENS / LLM_MAX_INPUT_CHARS: per-query limits.
-- LLM_INPUT_COST_PER_MILLION / OUTPUT_COST_PER_MILLION: optional configured pricing.
-- DJANGO_SECRET_KEY / ALLOWED_HOSTS / CORS_ALLOWED_ORIGINS: deployment settings.
-- CSRF_TRUSTED_ORIGINS / TRUST_PROXY_HEADERS / SECURE_SSL_REDIRECT: trusted TLS ingress.
-
-## Architecture and behavior
-
-React -> Django REST Framework -> modular application services -> MySQL and FAISS.
-SQLite is an explicit local/test option. Production requires MySQL and a secret key.
-The corpus stays in JSON; SQL stores operational metadata, profiles, messages,
-agent/tool executions, usage and evaluation records.
-
-Matching returns ELIGIBLE, NOT_ELIGIBLE or NEEDS_VERIFICATION, with every rule trace.
-Unknown values are never assumed. Unmapped clauses, institution-specific conditions,
-selection constraints and source contradictions remain verification requirements.
-Only the six initial fields are required for profile creation; relevant optional
-fields are requested from candidate traces. Partial profiles can be checked by the API.
-
-RAG uses section chunks, configurable sentence-transformer embeddings, scheme and
-section metadata filters, cosine search in persisted FAISS, then grounded generation.
-Missing indexes/provider keys return explicit fallback warnings. The source record,
-scheme ID and chunk ID remain traceable. Empty source URLs remain unavailable.
-
-The agent recovers private session context across HTTP requests. Tokens protect
-session access. Tools validate arguments, time out, retry bounded failures and log
-each invocation. Requests have correlation IDs; provider calls record available
-tokens/cost. All assistant responses pass the public Pydantic schema.
-
-## Checks and evaluation
+For a fresh checkout: Python 3.10+, install `requirements.lock` in a virtual
+environment, create `.env` and `var`, migrate, seed and ingest:
 
 ```powershell
-python -m ruff check backend tests scripts evaluation
-python -m ruff format --check backend tests scripts evaluation
+python -m pip install -r requirements.lock
+python backend/manage.py migrate
+python backend/manage.py seed_scholarships
+python backend/manage.py ingest_scholarships
+npm.cmd --prefix frontend ci
+```
+
+Use an installed Node 24 LTS or `python scripts/install_node.py`. The existing
+lockfile uses an HTTPS npm mirror because the default registry was unreachable in
+this workspace; package integrity hashes are retained.
+
+## Request and response
+
+`POST /api/agent/query` and `/api/rag/query` run the same conversational RAG flow:
+
+```json
+{"question":"How much does Pragati provide?"}
+```
+
+Responses contain `answer`, `sources`, `status`, optional `error`, and request/session
+identifiers. Status is `success`, `out_of_scope`, `insufficient_evidence`, or `error`.
+The answer is the generated text. Source names, URLs and exact supporting excerpts
+come from retrieved records, never model-invented citations. Missing links stay missing.
+Failures use HTTP 503 and a clear error. Matching/profile endpoints have been removed.
+
+The assistant can explain benefits, criteria, documents, procedures, conflicting
+information, and missing deadlines. Follow-up questions use private conversation
+history. Voluntarily supplied circumstances may be discussed, but the scholarship
+authority makes the final eligibility/award decision.
+
+## Verification
+
+```powershell
 python -m pytest -q
+python -m ruff check backend tests scripts evaluation
 python backend/manage.py check
 python backend/manage.py spectacular --validate --file var/openapi.yaml
+python scripts/verify_repository.py
 python evaluation/run_eval.py
+python evaluation/run_eval.py --live --delay 20
+npm.cmd --prefix frontend run lint
 npm.cmd --prefix frontend run build
 npm.cmd --prefix frontend test
 npm.cmd --prefix frontend run e2e
 ```
 
-Browser tests use installed Edge by default. Override PLAYWRIGHT_BROWSER_CHANNEL
-or install Chromium and use that browser on another operating system.
-The evaluation uses 33 real-corpus profile cases plus one isolated rule contract and
-30 questions. Reports contain actual eligibility, retrieval, grounding, citation,
-failure and P50/P95/P99 measurements. Read
-[evaluation report](evaluation/reports/latest.json) and [methodology](docs/EVALUATION.md).
-Metrics describe this corpus and local runtime; live LLM latency is not measured
-without credentials. No SLA or general hallucination-free completeness is claimed.
+Unit/browser tests do not call live Gemini. Browser tests use Edge and isolated
+ports 8001/5174. Live evaluation calls the configured provider for 16 acceptance
+cases plus conversation setup turns; it is paced to reduce rate limiting.
+[Retrieval report](evaluation/reports/latest.json),
+[live report](evaluation/reports/live_rag.json), and
+[refactor/verification report](docs/RAG_REFACTOR.md) record the actual results.
 
-## Docker and deployment
+## Deployment and limits
 
-```powershell
-# Fill .env with separate MySQL passwords and a generated Django secret.
-docker compose up --build -d
-docker compose exec backend python backend/manage.py ingest_scholarships
-```
+MySQL is required when `DJANGO_DEBUG=false`. Docker retains the database, index,
+model cache and static assets in volumes. See [deployment](docs/DEPLOYMENT.md).
+Docker/MySQL runtime validation remains pending in this Windows environment.
 
-Open http://localhost:8080. MySQL, index/model cache and static assets have persistent
-volumes. Ingestion is explicit. Production TLS/proxy settings and health checks are
-documented in [deployment](docs/DEPLOYMENT.md).
+Generated language is checked by schema validation, exact evidence membership,
+and a separate model grounding review. This reduces unsupported claims but is not
+a mathematical guarantee of correct paraphrases or complete discovery. Provider
+quotas and network outages return errors. The dataset is a supplied snapshot, not
+live official scholarship updates. English embeddings are retained; multilingual
+retrieval quality has not been established.
 
-Docker files were statically checked; no Docker runtime is available here.
-MySQL execution and live Gemini calls remain unverified. Complete those checks,
-configure TLS/secrets and review dependencies before a production rollout.
-
-## Documentation
-
-[Architecture and diagrams](docs/ARCHITECTURE.md) ? [API](docs/API.md) ?
-[Dataset](docs/DATASET.md) ? [Eligibility](docs/ELIGIBILITY_ENGINE.md) ?
-[RAG](docs/RAG.md) ? [Agent](docs/AGENT.md) ? [Evaluation](docs/EVALUATION.md) ?
-[Deployment](docs/DEPLOYMENT.md) ? [Security](docs/SECURITY.md) ?
-[Final verification](docs/VERIFICATION.md).
-
-Known limits: dataset freshness/deadlines are unverified; all real records include
-some residual external condition, so complete automation cannot guarantee an award.
-Some free-text conditions need official review. The LLM uses constrained quotations
-instead of unrestricted factual prose. Timed-out Python workers finish in the
-background within a fixed capacity. Conversation history is limited to eight recent
-messages per context window. Source contradictions are preserved. No Git remote is
-configured, so commits are local.
+[Architecture](docs/ARCHITECTURE.md) | [RAG](docs/RAG.md) | [API](docs/API.md) |
+[Agent](docs/AGENT.md) | [Security](docs/SECURITY.md) | [Evaluation](docs/EVALUATION.md)
