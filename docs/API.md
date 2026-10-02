@@ -12,6 +12,8 @@ Unknown fields and oversized/invalid inputs are rejected. X-Request-ID correlate
 | POST /api/sessions | Create private conversation; returns token once |
 | GET /api/sessions/{session_id} | Read conversation with X-Session-Token |
 | DELETE /api/sessions/{session_id} | Delete conversation with its token |
+| GET /api/health/live | Django liveness; no database, Gemini or user query |
+| GET /api/health/ready | Database, validated index and locally cached embedding model readiness |
 | GET /api/health | SQL/corpus/vector readiness and whether LLM is configured |
 | POST /api/admin/ingest | Authenticated staff ingestion |
 | GET /api/agent/usage | Authenticated staff aggregate usage |
@@ -57,3 +59,11 @@ nor source-link routing. RAGAS is never imported or invoked by the API.
 transient `LLM_RATE_LIMITED` response. Both retain the existing HTTP 503 error
 contract. Returned invalid factual output is not regenerated; transient requests
 retry within bounded phase/time limits, with all attempted calls audited.
+
+
+Deployment probes return Cache-Control: no-store. /api/health/live returns 200
+with status ok. /api/health/ready returns status ready (200) or unavailable (503),
+database/vector_index/embedding_model checks and fixed sanitized error codes.
+Readiness loads the local model and validates the vector bundle without calling
+Gemini; it does not establish provider availability. These probes bypass API
+authentication/throttling and retain Django host/HTTPS middleware checks.

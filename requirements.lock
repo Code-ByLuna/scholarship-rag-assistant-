@@ -101,3 +101,4 @@ websockets==15.0.1
 xxhash==4.0.1
 zstandard==0.25.0
 gunicorn>=23,<24; sys_platform != "win32"
+whitenoise==6.12.0

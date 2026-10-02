@@ -2,7 +2,9 @@
 
 API keys, database credentials and Django secrets are backend environment variables.
 `.env`, runtime databases/indexes/caches are ignored and excluded from Docker builds.
-Production requires MySQL and a Django secret. Staff endpoints require authentication.
+Production requires an explicit DB_ENGINE=mysql or DB_ENGINE=sqlite and a Django
+secret. Database selection preserves production security settings. Staff endpoints
+require authentication.
 Public browsing/chat are throttled and inputs bounded. API errors do not expose stack
 traces, raw provider payloads, credential values or model text in logs. Query text is private by default; optional
 RAG_LOG_QUERY_TEXT=true logs queries with common credential formats redacted.

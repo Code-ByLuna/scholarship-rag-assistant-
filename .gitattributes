@@ -2,3 +2,8 @@
 * text=auto
 
 *.sh text eol=lf
+
+# FAISS deployment artifacts must never undergo text normalization.
+*.faiss binary
+# Bundle integrity hashes apply to the exact bytes on every platform.
+var/index/** -text

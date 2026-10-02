@@ -24,7 +24,7 @@ services:
       DJANGO_DEBUG: ${DJANGO_DEBUG:-true}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
       VECTOR_INDEX_DIR: /app/var/index
-      HF_HOME: /app/var/models
+      HF_HOME: /opt/huggingface
     volumes:
       - app_data:/app/var
       - static_data:/app/var/static

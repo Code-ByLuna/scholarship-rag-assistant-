@@ -1,4 +1,4 @@
-"""Verify staged/tracked file hygiene and source/schema integrity without printing secrets."""
+"""Verify tracked and visible new file hygiene and source/schema integrity without printing secrets."""
 
 import json
 import re
@@ -17,13 +17,24 @@ def main():
     shell = (ROOT / "backend/entrypoint.sh").read_bytes()
     if not shell.startswith(b"#!/bin/sh\n") or b"\r" in shell:
         raise ValueError("Docker entrypoint must be nonempty and use Unix line endings.")
+    from provision_rag_assets import index_paths, load_manifest, validate_index
+
+    manifest = load_manifest()
+    validate_index(manifest)
+    allowed_index = {"var/index/" + name for name in index_paths(manifest)}
     dataset = load_dataset()
     schema = json.loads(
         (ROOT / "backend/schemas/assistant_response_schema.json").read_text(encoding="utf-8")
     )
     if schema != ScholarshipAnswer.model_json_schema():
         raise ValueError("Generated assistant response schema is out of date.")
-    tracked = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).decode().split("\0")
+    tracked = (
+        subprocess.check_output(
+            ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"], cwd=ROOT
+        )
+        .decode()
+        .split("\0")
+    )
     failures = []
     patterns = [
         re.compile(r"AIza[0-9A-Za-z_-]{30,}"),
@@ -32,8 +43,10 @@ def main():
     ]
     for name in filter(None, tracked):
         path = ROOT / name
-        if name.endswith(".env") or any(
-            part in name.split("/") for part in ("node_modules", ".venv", "__pycache__", "var")
+        if (
+            name.endswith(".env")
+            or any(part in name.split("/") for part in ("node_modules", ".venv", "__pycache__"))
+            or (name.startswith("var/") and name not in allowed_index)
         ):
             failures.append(name)
             continue
@@ -44,7 +57,9 @@ def main():
     if failures:
         print("Repository hygiene check failed for:", ", ".join(failures))
         return 1
-    print(f"Repository hygiene passed for {len(list(filter(None, tracked)))} staged/tracked files.")
+    print(
+        f"Repository hygiene passed for {len(list(filter(None, tracked)))} tracked/visible new files."
+    )
     print(f"Corpus provenance and schema integrity passed for {len(dataset['schemes'])} records.")
     return 0
 

@@ -1,3 +1,9 @@
+---
+title: Scholarship Navigator API
+sdk: docker
+app_port: 8000
+---
+
 # Scholarship Navigator
 
 A conversational scholarship assistant powered by retrieval augmented generation.
@@ -141,8 +147,11 @@ The [earlier refactor report](docs/RAG_REFACTOR.md) remains as historical eviden
 
 ## Deployment and limits
 
-MySQL is required when `DJANGO_DEBUG=false`. Docker retains the database, index,
-model cache and static assets in volumes. See [deployment](docs/DEPLOYMENT.md).
+With `DJANGO_DEBUG=false`, explicitly select `DB_ENGINE=mysql` or `DB_ENGINE=sqlite`
+and provide a Django secret. SQLite supports Render demos using `var/dev.sqlite3`
+(or optional `SQLITE_PATH`); its parent directory is created automatically.
+Docker Compose keeps MySQL and persists the database, index
+and static assets in volumes; the pinned model cache is baked into the image. See [deployment](docs/DEPLOYMENT.md).
 Docker/MySQL runtime validation remains pending in this Windows environment.
 
 Generated language is checked by schema validation, exact evidence membership, generic numeric checks,
@@ -216,3 +225,13 @@ The targeted reliability verification and the separately preserved quota-exhaust
 full run are documented in [docs/QUALITY_FIX.md](docs/QUALITY_FIX.md). The baseline
 RAGAS report remains unchanged; a complete comparable rerun requires available
 Gemini quota. Daily quota exhaustion is reported immediately and is not retried.
+
+
+## Hugging Face backend Space
+
+The Docker image packages the reviewed FAISS bundle and a pinned MiniLM snapshot
+for offline local embeddings. React remains on Vercel; the image defaults to MySQL,
+with explicit SQLite available for single-instance demos.
+See [Space setup, variables, commands and blockers](docs/HUGGING_FACE.md).
+A normal remote MySQL endpoint on port 3306 is blocked by Spaces networking.
+Local Docker build/start verification is pending because Docker is not installed.

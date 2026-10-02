@@ -54,7 +54,16 @@ playwright-report/
 *.sqlite-*
 *.sqlite3
 *.sqlite3-*
-var/
+# Include only the reviewed deployment index; all other runtime artifacts stay excluded.
+var/*
+!var/index/
+var/index/*
+!var/index/CURRENT
+!var/index/faac7d4df3034bafae61db8e52553481/
+var/index/faac7d4df3034bafae61db8e52553481/*
+!var/index/faac7d4df3034bafae61db8e52553481/vectors.faiss
+!var/index/faac7d4df3034bafae61db8e52553481/chunks.json
+!var/index/faac7d4df3034bafae61db8e52553481/metadata.json
 *.log
 
 # IDE, editor and operating-system temporary files.

@@ -1,9 +1,10 @@
-"""Environment-driven Django configuration; MySQL is required in production."""
+"""Environment-driven Django configuration supporting MySQL and SQLite."""
 
 import os
 import secrets
 from pathlib import Path
 
+from corsheaders.defaults import default_headers
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
@@ -37,6 +38,10 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+# Backend-only deployments serve collected Django admin assets without nginx.
+# Local/Compose behavior remains unchanged unless explicitly enabled.
+if os.getenv("DJANGO_SERVE_STATIC", "false").lower() == "true":
+    MIDDLEWARE.insert(2, "whitenoise.middleware.WhiteNoiseMiddleware")
 ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
@@ -53,7 +58,13 @@ TEMPLATES = [
     }
 ]
 WSGI_APPLICATION = "config.wsgi.application"
-db_engine = os.getenv("DB_ENGINE", "sqlite")
+db_engine = os.getenv("DB_ENGINE")
+if db_engine is None:
+    if not DEBUG:
+        raise ImproperlyConfigured(
+            "Production requires an explicit DB_ENGINE=mysql or DB_ENGINE=sqlite."
+        )
+    db_engine = "sqlite"
 if db_engine == "mysql":
     DATABASES = {
         "default": {
@@ -67,15 +78,17 @@ if db_engine == "mysql":
             "CONN_MAX_AGE": 60,
         }
     }
-elif DEBUG:
+elif db_engine == "sqlite":
+    sqlite_path = BASE_DIR / (os.getenv("SQLITE_PATH") or "var/dev.sqlite3")
+    sqlite_path.parent.mkdir(parents=True, exist_ok=True)
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "var" / "dev.sqlite3",
+            "NAME": sqlite_path,
         }
     }
 else:
-    raise ImproperlyConfigured("Production requires DB_ENGINE=mysql.")
+    raise ImproperlyConfigured("DB_ENGINE must be mysql or sqlite.")
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -91,6 +104,7 @@ STATIC_ROOT = BASE_DIR / "var" / "static"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 APPEND_SLASH = False
 CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+CORS_ALLOW_HEADERS = (*default_headers, "x-session-token", "x-request-id")
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["api.renderers.UTF8JSONRenderer"],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",

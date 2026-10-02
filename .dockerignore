@@ -7,7 +7,16 @@ __pycache__
 **/__pycache__
 .pytest_cache
 .ruff_cache
-var
+# Include only the reviewed deployment index; all other runtime artifacts stay excluded.
+var/*
+!var/index/
+var/index/*
+!var/index/CURRENT
+!var/index/faac7d4df3034bafae61db8e52553481/
+var/index/faac7d4df3034bafae61db8e52553481/*
+!var/index/faac7d4df3034bafae61db8e52553481/vectors.faiss
+!var/index/faac7d4df3034bafae61db8e52553481/chunks.json
+!var/index/faac7d4df3034bafae61db8e52553481/metadata.json
 frontend/node_modules
 frontend/dist
 frontend/test-results
