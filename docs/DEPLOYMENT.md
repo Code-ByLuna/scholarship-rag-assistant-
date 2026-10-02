@@ -40,8 +40,8 @@ static_data volume and served by nginx. Frontend assets are built into nginx.
 Back up MySQL and vector volumes. Restrict admin ingress, schedule session retention,
 and run tests/evaluation and deployment health checks before accepting traffic.
 
-Docker is configured but could not be run here because the Docker CLI/daemon is absent.
-SQLite/browser/local-vector tests do not establish MySQL or Docker runtime readiness.
+Local checks and their exact scope are recorded in DEPLOYMENT_AUDIT.md.
+SQLite tests do not establish remote MySQL or hosted-service readiness.
 Live LLM setup is optional: LLM_PROVIDER=gemini and GEMINI_API_KEY in private .env.
 Measured LLM performance requires credentials and an explicit evaluation run.
 
@@ -62,47 +62,91 @@ index; all 16 application sections are retained. See DEMO_READINESS.md.
 
 ## Render demo with SQLite
 
-Set these variables in Render's backend service environment (see
-[deploy/render.env.example](../deploy/render.env.example)):
+Use a Render **Docker web service**, with the repository Dockerfile and the project
+root as the build context. Leave Render's custom Build Command and Docker Command
+empty: the Dockerfile builds the image and its CMD starts the existing entrypoint.
+The local equivalents are `docker build --load -t scholarship-rag-hf .` and
+`sh /app/backend/entrypoint.sh`. See [Render Docker deployment](https://render.com/docs/docker).
+Hosted Render behavior remains unverified until the actual service is redeployed.
+
+Set runtime variables from [render.env.example](../deploy/render.env.example):
 
 ```dotenv
 DJANGO_DEBUG=false
-DB_ENGINE=sqlite
 DJANGO_SECRET_KEY=<generated-private-secret>
-ALLOWED_HOSTS=<your-service>.onrender.com,localhost,127.0.0.1
+DB_ENGINE=sqlite
+ALLOWED_HOSTS=<actual-render-host>,localhost,127.0.0.1
+CORS_ALLOWED_ORIGINS=https://<actual-vercel-host>
+CSRF_TRUSTED_ORIGINS=https://<actual-vercel-host>
 TRUST_PROXY_HEADERS=true
 SECURE_SSL_REDIRECT=true
 DJANGO_SERVE_STATIC=true
+LLM_PROVIDER=gemini
+GEMINI_API_KEY=<private-provider-key>
+LLM_MODEL=gemini-3.5-flash-lite
+GUNICORN_WORKERS=1
+GUNICORN_THREADS=2
 ```
 
-SQLite retains the existing database location `BASE_DIR / "var" / "dev.sqlite3"`.
-Settings create its parent directory before Django opens the database. Optionally
-set SQLITE_PATH to a project-relative path such as `var/db.sqlite3`, or an absolute
-path on persistent storage. MYSQL_* variables are ignored in SQLite mode. Keep
-the service's existing CORS, CSRF and LLM variables configured for your deployment;
-database selection does not change those behaviors or FAISS/model configuration.
+Render supplies PORT (normally 10000). The entrypoint binds `0.0.0.0:$PORT`, or
+uses 8000 when PORT is absent for local Docker/Spaces. It migrates, seeds existing
+scholarship metadata and collects static files before Gunicorn starts.
+The image runs as UID 1000; a custom SQLite directory must be writable by that user.
+Keep TLS redirect enabled and trust forwarded HTTPS headers only through the
+platform's restricted ingress. ALLOWED_HOSTS cannot be empty or contain * in
+production. CORS permits only configured origins; custom session/request headers
+remain supported. CSRF_TRUSTED_ORIGINS applies to cookie/session authenticated POSTs.
+[Render port binding](https://render.com/docs/web-services#port-binding).
 
-The existing Docker image defaults to mysql, so explicitly override DB_ENGINE
-with sqlite in Render. Its entrypoint already runs migrate, seed_scholarships and
-collectstatic before Gunicorn. For a native Python service, run those same commands
-at runtime before starting Gunicorn, for example from the project root:
+SQLite retains `BASE_DIR / "var" / "dev.sqlite3"`, with the parent created
+automatically. Optional SQLITE_PATH accepts project-relative or absolute paths.
+MYSQL_* variables are unused in SQLite mode. The image defaults to mysql, so
+explicitly set DB_ENGINE=sqlite. No MySQL-to-SQLite fallback is performed.
 
-```sh
-python backend/manage.py migrate --noinput && python backend/manage.py seed_scholarships && python backend/manage.py collectstatic --noinput && gunicorn --chdir backend config.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 180
+Set the Render health check path to **/health/live**, with no trailing slash.
+It checks Django responsiveness without database, model, Gemini or network access.
+Check **/health/ready** separately for SELECT 1, verified index loading and cached
+model dimensions. Readiness does no embedding/provider request; the first call
+can load assets into its worker. Existing /api/health/live and /api/health/ready
+remain valid. [Render health checks](https://render.com/docs/health-checks).
+
+The image builds and verifies the model once using the immutable revision and
+SHA-256 values in deploy/rag-assets.json. HF_HUB_DISABLE_SHARED_BLOBS=1 keeps
+Linux blob targets inside the existing model path boundary. Runtime
+HF_HUB_OFFLINE=1 and TRANSFORMERS_OFFLINE=1 retain local-only model loading;
+Gemini still requires HTTPS access. The FAISS bundle is packaged without rebuilding.
+
+SQLite stores Django users and sessions, private conversation messages,
+scholarship metadata, execution/usage logs and evaluation runs. An ephemeral
+filesystem loses those records on redeploy/restart, while packaged corpus/index/
+model files remain in the image. This is acceptable for a disposable hackathon
+demo only if losing those records is understood. For persistence, mount a disk
+at `/app/var/sqlite` and set `SQLITE_PATH=/app/var/sqlite/db.sqlite3`; ensure it is
+writable by UID 1000. Do not mount an empty disk over the entire /app/var, which
+would hide the FAISS bundle. Migrate at service startup because Render disks are
+available only at runtime, not build/pre-deploy.
+[Render persistent disks](https://render.com/docs/disks).
+
+Use one service instance for SQLite. Retain MySQL for multi-instance deployments
+or workloads needing more concurrent writes; the MySQL settings and Compose
+database service remain supported. Remote MySQL/provider TLS needs separate
+validation against the actual endpoint.
+
+## Vercel frontend
+
+Configure Vercel with root directory `frontend`, framework `Vite`, build command
+`npm run build` and output directory `dist`. Install using the committed lockfile
+(`npm ci`). Set the public build variable:
+
+```dotenv
+VITE_API_BASE=https://<actual-render-service>.onrender.com
 ```
 
-Run migrations at service startup when using a persistent disk: Render disks are
-available only at runtime, not during build or pre-deploy commands. Without a
-persistent disk, SQLite changes (including sessions and usage records) are lost
-on redeploy/restart. For persistence, mount a disk at `/app/var/sqlite` in the
-existing Docker image and set `SQLITE_PATH=/app/var/sqlite/db.sqlite3`. This keeps
-the database inside var without hiding the packaged FAISS index. For a native
-service, use a directory under that deployment's project var directory instead.
-See [Render persistent disks](https://render.com/docs/disks).
-
-Use SQLite for a simple single-instance demo. For deployments needing concurrent
-writes or multiple service instances, retain DB_ENGINE=mysql and the unchanged
-MYSQL_* configuration. Docker Compose continues to select its MySQL service.
+Use the backend origin with no trailing slash or /api suffix; frontend/src/api.ts
+adds /api. Configure that frontend HTTPS origin in backend CORS_ALLOWED_ORIGINS.
+Rebuild/redeploy after changing VITE_API_BASE. Never put Django, MySQL or Gemini
+secrets in VITE_* variables. See [frontend/.env.example](../frontend/.env.example).
+The frontend uses hash routes, so no server-side SPA rewrite is needed.
 
 ## Optional offline evaluation
 

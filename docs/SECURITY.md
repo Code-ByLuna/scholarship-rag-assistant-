@@ -31,5 +31,21 @@ issue official eligibility/award decisions. Missing dates/links remain missing.
 Index/checksum files are writable only by trusted ingestion administrators. Checksums
 protect against corruption, not an attacker controlling both index and manifest.
 Thread timeouts cannot kill workers; occupied slots bound concurrency. Browser fonts
-may contact Google Fonts. MySQL and Docker runtime verification remains pending;
-repeat deployment-specific security/dependency checks before production use.
+may contact Google Fonts. See DEPLOYMENT_AUDIT.md for local Docker verification;
+remote MySQL TLS/connectivity and hosted proxy settings need deployment-specific checks.
+
+Production rejects empty/wildcard ALLOWED_HOSTS. CORS remains restricted to named
+origins, with x-session-token and x-request-id allowed. Proxy protocol headers are
+trusted only when TRUST_PROXY_HEADERS=true behind a restricted ingress.
+
+Deployment validation reports safe error reasons with configured credentials,
+common API-token formats, authorization headers and remote/signed URLs redacted.
+Checksum, immutable-revision and path-containment checks are retained.
+HF_HUB_DISABLE_SHARED_BLOBS=1 keeps Linux downloads within the existing allowed
+model-cache boundary instead of accepting arbitrary symlink escapes.
+
+SQLite mode preserves all authentication and security behavior. On ephemeral
+hosting it loses users, sessions, conversations, SQL metadata, execution/usage
+logs and evaluation runs on restart/redeploy. Persist and back up the database
+directory when those records matter; the read-only corpus and reviewed FAISS/model
+assets are separate packaged files.

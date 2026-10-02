@@ -44,8 +44,26 @@ def main():
     for name in filter(None, tracked):
         path = ROOT / name
         if (
-            name.endswith(".env")
-            or any(part in name.split("/") for part in ("node_modules", ".venv", "__pycache__"))
+            (
+                (path.name.startswith(".env") or ".env." in path.name or path.name.endswith(".env"))
+                and not path.name.endswith(".env.example")
+            )
+            or path.suffix in {".sqlite", ".sqlite3", ".log", ".tmp", ".temp"}
+            or any(
+                part in name.split("/")
+                for part in (
+                    "node_modules",
+                    ".venv",
+                    "venv",
+                    "env",
+                    "ENV",
+                    "__pycache__",
+                    ".pytest_cache",
+                    ".ruff_cache",
+                    ".idea",
+                    ".vscode",
+                )
+            )
             or (name.startswith("var/") and name not in allowed_index)
         ):
             failures.append(name)

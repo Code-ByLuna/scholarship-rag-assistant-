@@ -152,7 +152,8 @@ and provide a Django secret. SQLite supports Render demos using `var/dev.sqlite3
 (or optional `SQLITE_PATH`); its parent directory is created automatically.
 Docker Compose keeps MySQL and persists the database, index
 and static assets in volumes; the pinned model cache is baked into the image. See [deployment](docs/DEPLOYMENT.md).
-Docker/MySQL runtime validation remains pending in this Windows environment.
+See [the deployment audit](docs/DEPLOYMENT_AUDIT.md) for current local Linux verification
+and remaining hosted-service/MySQL/provider checks.
 
 Generated language is checked by schema validation, exact evidence membership, generic numeric checks,
 and selective model grounding review. Set `LLM_GROUNDING_REVIEW=always` to review
@@ -234,4 +235,28 @@ for offline local embeddings. React remains on Vercel; the image defaults to MyS
 with explicit SQLite available for single-instance demos.
 See [Space setup, variables, commands and blockers](docs/HUGGING_FACE.md).
 A normal remote MySQL endpoint on port 3306 is blocked by Spaces networking.
-Local Docker build/start verification is pending because Docker is not installed.
+The entrypoint honors Render's PORT and retains port 8000 by default for Spaces.
+See [the deployment audit](docs/DEPLOYMENT_AUDIT.md) for tested behavior and limits.
+
+## Render backend and Vercel frontend
+
+Use the repository Dockerfile for a Render Docker web service. Explicitly set
+DB_ENGINE=sqlite, keep DJANGO_DEBUG=false, and supply DJANGO_SECRET_KEY and the
+actual ALLOWED_HOSTS. Set LLM_PROVIDER=gemini and GEMINI_API_KEY for generated
+answers. Configure CORS_ALLOWED_ORIGINS for the real Vercel origin. See
+[deploy/render.env.example](deploy/render.env.example) and
+[complete deployment instructions](docs/DEPLOYMENT.md#render-demo-with-sqlite).
+
+The entrypoint migrates, seeds metadata, collects static files and binds Gunicorn
+to PORT, with 8000 as the Spaces/local default. /health/live is the cheap Render
+probe; /health/ready checks database, index and local model availability.
+SQLite data needs persistent storage to survive restarts/redeploys.
+
+Vercel: root frontend, build npm run build, output dist. Set
+VITE_API_BASE=https://<actual-render-service>.onrender.com without a trailing slash
+or /api. No backend secrets belong in frontend variables.
+
+The model build keeps the same immutable revision and all checksum checks.
+Repository-local Hub blobs avoid Linux shared-Xet symlink escapes. The image uses
+the same pinned PyTorch version's CPU wheel. Current verification and remaining
+limits are in [the deployment audit](docs/DEPLOYMENT_AUDIT.md).

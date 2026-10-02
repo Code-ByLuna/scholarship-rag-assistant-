@@ -21,6 +21,7 @@ services:
       DB_ENGINE: mysql
       MYSQL_HOST: mysql
       MYSQL_PORT: "3306"
+      PORT: "8000"
       DJANGO_DEBUG: ${DJANGO_DEBUG:-true}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
       VECTOR_INDEX_DIR: /app/var/index
@@ -32,7 +33,7 @@ services:
       mysql:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8000/api/health"]
+      test: ["CMD", "curl", "--fail", "--silent", "-H", "X-Forwarded-Proto: https", "http://localhost:8000/health/live"]
       interval: 30s
       timeout: 5s
       start_period: 60s

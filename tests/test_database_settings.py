@@ -28,6 +28,10 @@ def load_settings(tmp_path, monkeypatch):
         "MYSQL_HOST",
         "MYSQL_PORT",
         "SECURE_SSL_REDIRECT",
+        "ALLOWED_HOSTS",
+        "CORS_ALLOWED_ORIGINS",
+        "CSRF_TRUSTED_ORIGINS",
+        "TRUST_PROXY_HEADERS",
     ):
         monkeypatch.delenv(name, raising=False)
 
@@ -168,3 +172,42 @@ def test_unsupported_database_engine_fails_explicitly(load_settings, engine, deb
             DJANGO_DEBUG=debug,
             DJANGO_SECRET_KEY="test-only-secret",
         )
+
+
+@pytest.mark.parametrize("hosts", ["*", " , ", "example.com,*"])
+def test_production_rejects_unrestricted_or_empty_allowed_hosts(load_settings, hosts):
+    with pytest.raises(ImproperlyConfigured, match="ALLOWED_HOSTS"):
+        load_settings(
+            DJANGO_DEBUG="false",
+            DJANGO_SECRET_KEY="test-only-secret",
+            DB_ENGINE="sqlite",
+            ALLOWED_HOSTS=hosts,
+        )
+
+
+def test_production_hosts_origins_and_proxy_configuration(load_settings):
+    configured = load_settings(
+        DJANGO_DEBUG="False",
+        DJANGO_SECRET_KEY="test-only-secret",
+        DB_ENGINE="sqlite",
+        ALLOWED_HOSTS=" demo.onrender.com , localhost,127.0.0.1 ",
+        CORS_ALLOWED_ORIGINS=" https://demo.vercel.app , ",
+        CSRF_TRUSTED_ORIGINS=" https://demo.vercel.app , ",
+        TRUST_PROXY_HEADERS="True",
+    )
+    assert configured["ALLOWED_HOSTS"] == ["demo.onrender.com", "localhost", "127.0.0.1"]
+    assert configured["CORS_ALLOWED_ORIGINS"] == ["https://demo.vercel.app"]
+    assert configured["CSRF_TRUSTED_ORIGINS"] == ["https://demo.vercel.app"]
+    assert configured["SECURE_PROXY_SSL_HEADER"] == ("HTTP_X_FORWARDED_PROTO", "https")
+    assert not configured.get("CORS_ALLOW_ALL_ORIGINS", False)
+    assert "x-session-token" in configured["CORS_ALLOW_HEADERS"]
+    assert "x-request-id" in configured["CORS_ALLOW_HEADERS"]
+
+
+def test_proxy_headers_are_disabled_by_default(load_settings):
+    configured = load_settings(
+        DJANGO_DEBUG="false",
+        DJANGO_SECRET_KEY="test-only-secret",
+        DB_ENGINE="sqlite",
+    )
+    assert configured["SECURE_PROXY_SSL_HEADER"] is None
